@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>My Life OS</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="top-bar no-print">
+    <div>
+      <h1>My Life OS</h1>
+      <p id="today-date" class="subtitle"></p>
+    </div>
+    <div class="backup-controls">
+      <button onclick="exportData()" class="btn-small">Save Backup</button>
+      <label class="btn-small file-label">
+        Load <input type="file" id="import-file" accept=".json" onchange="importData(event)" hidden>
+      </label>
+    </div>
+  </header>
+
+  <main id="app-content">
+
+    <!-- TAB 1: TODAY & HEALTH -->
+    <section id="tab-today" class="tab-page active">
+      <div class="card">
+        <h2>Quick Links</h2>
+        <div class="row">
+          <a href="https://mail.google.com" target="_blank" class="btn-outline">School Email</a>
+          <a href="https://tasks.google.com" target="_blank" class="btn-outline">Google Tasks</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Health & Cycle</h2>
+        <div class="health-grid">
+          <div class="health-box">
+            <span class="label">Water Intake</span>
+            <div class="big-num"><span id="water-count">0</span> / 8 cups</div>
+            <div class="row">
+              <button onclick="changeWater(1)" class="btn-primary">+1 Cup</button>
+              <button onclick="resetWater()" class="btn-ghost">Reset</button>
+            </div>
+          </div>
+          <div class="health-box">
+            <span class="label">Period Tracker</span>
+            <p id="cycle-status" class="small-text">No dates logged yet.</p>
+            <input type="date" id="period-date">
+            <button onclick="logPeriod()" class="btn-primary" style="margin-top:6px;">Log Start Date</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Today's Classes & Clubs</h2>
+        <ul id="today-schedule-list" class="item-list"></ul>
+      </div>
+
+      <div class="card">
+        <h2>Daily To-Do List</h2>
+        <div class="input-group">
+          <input type="text" id="todo-input" placeholder="Add homework or task...">
+          <button onclick="addTodo()" class="btn-primary">Add</button>
+        </div>
+        <ul id="todo-list" class="item-list"></ul>
+      </div>
+
+      <div class="card">
+        <h2>Quick Brain Dump</h2>
+        <textarea id="scratchpad" rows="3" placeholder="Jot down quick notes, locker combos, or ideas..." oninput="saveScratchpad()"></textarea>
+      </div>
+    </section>
+
+    <!-- TAB 2: SCHEDULE & AUTO-RESUME -->
+    <section id="tab-schedule" class="tab-page">
+      <div class="card no-print">
+        <h2>Add Class, Club, or Routine</h2>
+        <select id="sched-type">
+          <option value="Class">School Class</option>
+          <option value="Club">Club / Extracurricular</option>
+          <option value="Daily">Daily Routine</option>
+        </select>
+        <input type="text" id="sched-name" placeholder="Name (e.g., Robotics Club, AP Bio)">
+        <input type="text" id="sched-time" placeholder="Days & Time (e.g., Mon/Wed 3:30 PM)">
+        <input type="text" id="sched-role" placeholder="Role / Resume Description (e.g., Lead Builder)">
+        <button onclick="addScheduleItem()" class="btn-primary">Add to Schedule & Resume</button>
+      </div>
+
+      <div class="card no-print">
+        <h2>My Schedules</h2>
+        <ul id="full-schedule-list" class="item-list"></ul>
+      </div>
+
+      <div class="card resume-box" id="printable-resume">
+        <div class="row space-between">
+          <h2>Auto-Generated Resume</h2>
+          <button onclick="window.print()" class="btn-small no-print">Print / Save PDF</button>
+        </div>
+        <p class="subtitle">Automatically synced from your Classes, Clubs & Completed Projects</p>
+        <hr>
+        <h3>Education & Coursework</h3>
+        <ul id="resume-classes" class="resume-list"></ul>
+        <h3>Clubs & Leadership</h3>
+        <ul id="resume-clubs" class="resume-list"></ul>
+        <h3>Projects & Achievements</h3>
+        <ul id="resume-projects" class="resume-list"></ul>
+      </div>
+    </section>
+
+    <!-- TAB 3: BOOKS & SHOWS/MOVIES -->
+    <section id="tab-media" class="tab-page">
+      <div class="sub-tabs">
+        <button class="sub-btn active" onclick="switchMediaSub('books', this)">Books</button>
+        <button class="sub-btn" onclick="switchMediaSub('shows', this)">Shows & Movies</button>
+      </div>
+
+      <!-- BOOKS SECTION -->
+      <div id="media-books" class="media-section active">
+        <div class="card">
+          <h2>Add a Book</h2>
+          <input type="text" id="book-title" placeholder="Book Title & Author">
+          <div class="row">
+            <select id="book-status">
+              <option value="In Progress">In Progress</option>
+              <option value="To Be Read">To Be Read</option>
+              <option value="Finished">Finished</option>
+            </select>
+            <input type="text" id="book-progress" placeholder="Page # or % (e.g., p. 120/300)">
+          </div>
+          <button onclick="addBook()" class="btn-primary">Save Book</button>
+        </div>
+
+        <div class="card">
+          <h3>In Progress</h3>
+          <ul id="books-in-progress" class="item-list"></ul>
+          <h3>To Be Read</h3>
+          <ul id="books-tbr" class="item-list"></ul>
+          <h3>Finished</h3>
+          <ul id="books-finished" class="item-list"></ul>
+        </div>
+      </div>
+
+      <!-- SHOWS & MOVIES SECTION -->
+      <div id="media-shows" class="media-section">
+        <div class="card">
+          <h2>Add Show or Movie</h2>
+          <input type="text" id="show-title" placeholder="Title (e.g., Spider-Verse, Stranger Things)">
+          <div class="row">
+            <select id="show-type">
+              <option value="Show">TV Show</option>
+              <option value="Movie">Movie</option>
+            </select>
+            <select id="show-status">
+              <option value="Watching">Watching</option>
+              <option value="Watchlist">Watchlist</option>
+              <option value="Finished">Finished / Favorite</option>
+            </select>
+          </div>
+          <input type="text" id="show-note" placeholder="Season/Ep or Rating (e.g., S2 E4 or 10/10)">
+          <button onclick="addShow()" class="btn-primary">Save Show / Movie</button>
+        </div>
+
+        <div class="card">
+          <h3>Currently Watching</h3>
+          <ul id="shows-watching" class="item-list"></ul>
+          <h3>Watchlist</h3>
+          <ul id="shows-watchlist" class="item-list"></ul>
+          <h3>Finished & Favorites</h3>
+          <ul id="shows-finished" class="item-list"></ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: PROJECTS, GOALS & WISH LIST -->
+    <section id="tab-life" class="tab-page">
+      <div class="card">
+        <h2>Projects (Art, Robotics, etc.)</h2>
+        <div class="row">
+          <select id="proj-category">
+            <option value="Robotics">Robotics</option>
+            <option value="Art">Art</option>
+            <option value="Other">Other</option>
+          </select>
+          <select id="proj-status">
+            <option value="In Progress">In Progress</option>
+            <option value="Completed">Completed</option>
+          </select>
+        </div>
+        <input type="text" id="proj-name" placeholder="Project Name">
+        <input type="text" id="proj-notes" placeholder="Next step or materials needed">
+        <button onclick="addProject()" class="btn-primary">Add Project</button>
+        <ul id="project-list" class="item-list"></ul>
+      </div>
+
+      <div class="card">
+        <h2>Life Goals</h2>
+        <div class="input-group">
+          <input type="text" id="goal-input" placeholder="Add a short or long-term goal...">
+          <button onclick="addGoal()" class="btn-primary">Add</button>
+        </div>
+        <ul id="goal-list" class="item-list"></ul>
+      </div>
+
+      <div class="card">
+        <div class="row space-between">
+          <h2>Shopping Wish List</h2>
+          <span class="badge">Total: $<span id="wish-total">0.00</span></span>
+        </div>
+        <div class="row">
+          <input type="text" id="wish-name" placeholder="Item name">
+          <input type="number" id="wish-price" placeholder="Price ($)" step="0.01" style="max-width:110px;">
+        </div>
+        <button onclick="addWish()" class="btn-primary">Add to Wish List</button>
+        <ul id="wish-list" class="item-list"></ul>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- BOTTOM NAVIGATION BAR -->
+  <nav class="bottom-nav no-print">
+    <button class="nav-btn active" onclick="switchTab('today', this)">Today</button>
+    <button class="nav-btn" onclick="switchTab('schedule', this)">Schedule & Resume</button>
+    <button class="nav-btn" onclick="switchTab('media', this)">Books & Shows</button>
+    <button class="nav-btn" onclick="switchTab('life', this)">Projects & Goals</button>
+  </nav>
+
+  <script src="app.js"></script>
+</body>
+</html>
