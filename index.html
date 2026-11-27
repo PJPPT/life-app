@@ -37,7 +37,7 @@
       </div>
 
       <div class="card">
-        <h2>Health & Cycle</h2>
+        <h2>Health & Cycle Tracker</h2>
         <div class="health-grid">
           <div class="health-box">
             <span class="label">Water Intake</span>
@@ -48,16 +48,20 @@
             </div>
           </div>
           <div class="health-box">
-            <span class="label">Period Tracker</span>
-            <p id="cycle-status" class="small-text">No dates logged yet.</p>
-            <input type="date" id="period-date">
-            <button onclick="logPeriod()" class="btn-primary" style="margin-top:6px;">Log Start Date</button>
+            <span class="label">Cycle Status</span>
+            <p id="cycle-display-status" class="small-text">Tap below to update current status.</p>
+            <select id="cycle-status-select" onchange="updateCycleStatus()">
+              <option value="Normal / Follicular">Normal / Follicular</option>
+              <option value="Ovulation Window">Ovulation Window</option>
+              <option value="Luteal Phase">Luteal Phase</option>
+              <option value="Period Active">Period Active</option>
+            </select>
           </div>
         </div>
       </div>
 
       <div class="card">
-        <h2>Today's Classes & Clubs</h2>
+        <h2>Today's Schedule & Classes</h2>
         <ul id="today-schedule-list" class="item-list"></ul>
       </div>
 
@@ -86,8 +90,30 @@
           <option value="Daily">Daily Routine</option>
         </select>
         <input type="text" id="sched-name" placeholder="Name (e.g., Robotics Club, AP Bio)">
-        <input type="text" id="sched-time" placeholder="Days & Time (e.g., Mon/Wed 3:30 PM)">
-        <input type="text" id="sched-role" placeholder="Role / Resume Description (e.g., Lead Builder)">
+        
+        <div class="row">
+          <input type="time" id="sched-time-start">
+          <span style="color:var(--muted)">to</span>
+          <input type="time" id="sched-time-end">
+        </div>
+
+        <select id="sched-recurrence">
+          <option value="Everyday">Everyday</option>
+          <option value="Weekdays (Mon-Fri)">Weekdays (Mon-Fri)</option>
+          <option value="Custom Days">Custom Days (Select below)</option>
+        </select>
+
+        <div class="day-selector row">
+          <label><input type="checkbox" value="Mon"> Mon</label>
+          <label><input type="checkbox" value="Tue"> Tue</label>
+          <label><input type="checkbox" value="Wed"> Wed</label>
+          <label><input type="checkbox" value="Thu"> Thu</label>
+          <label><input type="checkbox" value="Fri"> Fri</label>
+          <label><input type="checkbox" value="Sat"> Sat</label>
+          <label><input type="checkbox" value="Sun"> Sun</label>
+        </div>
+
+        <input type="text" id="sched-role" placeholder="Role / Resume Description (e.g., Lead Builder)" style="margin-top:8px;">
         <button onclick="addScheduleItem()" class="btn-primary">Add to Schedule & Resume</button>
       </div>
 
@@ -211,10 +237,9 @@
           <h2>Shopping Wish List</h2>
           <span class="badge">Total: $<span id="wish-total">0.00</span></span>
         </div>
-        <div class="row">
-          <input type="text" id="wish-name" placeholder="Item name">
-          <input type="number" id="wish-price" placeholder="Price ($)" step="0.01" style="max-width:110px;">
-        </div>
+        <input type="text" id="wish-name" placeholder="Item name">
+        <input type="url" id="wish-link" placeholder="Paste item web link (URL)">
+        <input type="number" id="wish-price" placeholder="Price ($)" step="0.01">
         <button onclick="addWish()" class="btn-primary">Add to Wish List</button>
         <ul id="wish-list" class="item-list"></ul>
       </div>
