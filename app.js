@@ -1,7 +1,6 @@
-// Load saved data from phone's localStorage or create blank defaults
 let data = JSON.parse(localStorage.getItem('lifeOSData')) || {
   water: 0,
-  periodDates: [],
+  cycleStatus: 'Normal / Follicular',
   todos: [],
   scratchpad: '',
   schedules: [],
@@ -32,7 +31,7 @@ function switchMediaSub(subName, btn) {
   btn.classList.add('active');
 }
 
-// Health: Water & Period
+// Health: Water & Cycle
 function changeWater(amount) {
   data.water = Math.max(0, data.water + amount);
   saveData();
@@ -42,11 +41,8 @@ function resetWater() {
   saveData();
 }
 
-function logPeriod() {
-  const dateVal = document.getElementById('period-date').value;
-  if (!dateVal) return;
-  data.periodDates.push(dateVal);
-  data.periodDates.sort();
+function updateCycleStatus() {
+  data.cycleStatus = document.getElementById('cycle-status-select').value;
   saveData();
 }
 
@@ -71,13 +67,27 @@ function saveScratchpad() {
 function addScheduleItem() {
   const type = document.getElementById('sched-type').value;
   const name = document.getElementById('sched-name').value.trim();
-  const time = document.getElementById('sched-time').value.trim();
+  const timeStart = document.getElementById('sched-time-start').value;
+  const timeEnd = document.getElementById('sched-time-end').value;
+  const recurrence = document.getElementById('sched-recurrence').value;
+  
+  let selectedDays = [];
+  if (recurrence === 'Custom Days') {
+    document.querySelectorAll('.day-selector input:checked').forEach(cb => selectedDays.push(cb.value));
+  } else {
+    selectedDays = [recurrence];
+  }
+
   const role = document.getElementById('sched-role').value.trim();
   if (!name) return;
-  data.schedules.push({ type, name, time, role });
+
+  data.schedules.push({ type, name, timeStart, timeEnd, recurrence, days: selectedDays, role });
+  
   document.getElementById('sched-name').value = '';
-  document.getElementById('sched-time').value = '';
+  document.getElementById('sched-time-start').value = '';
+  document.getElementById('sched-time-end').value = '';
   document.getElementById('sched-role').value = '';
+  document.querySelectorAll('.day-selector input').forEach(cb => cb.checked = false);
   saveData();
 }
 
@@ -148,10 +158,12 @@ function addGoal() {
 
 function addWish() {
   const name = document.getElementById('wish-name').value.trim();
+  const link = document.getElementById('wish-link').value.trim();
   const price = parseFloat(document.getElementById('wish-price').value) || 0;
   if (!name) return;
-  data.wishes.push({ name, price });
+  data.wishes.push({ name, link, price });
   document.getElementById('wish-name').value = '';
+  document.getElementById('wish-link').value = '';
   document.getElementById('wish-price').value = '';
   saveData();
 }
@@ -189,13 +201,10 @@ function renderAll() {
   document.getElementById('water-count').textContent = data.water;
   document.getElementById('scratchpad').value = data.scratchpad || '';
 
-  // Period prediction (+28 days from last logged date)
-  const cycleEl = document.getElementById('cycle-status');
-  if (data.periodDates.length > 0) {
-    const last = new Date(data.periodDates[data.periodDates.length - 1] + 'T00:00:00');
-    const next = new Date(last);
-    next.setDate(last.getDate() + 28);
-    cycleEl.textContent = `Last: ${last.toLocaleDateString('en-US', {month:'short', day:'numeric'})} | Est. Next: ${next.toLocaleDateString('en-US', {month:'short', day:'numeric'})}`;
+  // Cycle Status
+  if (data.cycleStatus) {
+    document.getElementById('cycle-status-select').value = data.cycleStatus;
+    document.getElementById('cycle-display-status').textContent = `Current Phase: ${data.cycleStatus}`;
   }
 
   // Todos
@@ -207,15 +216,20 @@ function renderAll() {
   `).join('');
 
   // Schedules & Resume
-  const schedHTML = data.schedules.map((s, i) => `
-    <li>
-      <div class="item-info">
-        <div class="item-title">[${s.type}] ${s.name}</div>
-        <div class="item-sub">${s.time} ${s.role ? '• ' + s.role : ''}</div>
-      </div>
-      <button class="del-btn" onclick="deleteItem('schedules', ${i})">X</button>
-    </li>
-  `).join('');
+  const schedHTML = data.schedules.map((s, i) => {
+    let timeStr = (s.timeStart || s.timeEnd) ? `${s.timeStart || ''} - ${s.timeEnd || ''}` : '';
+    let daysStr = Array.isArray(s.days) ? s.days.join(', ') : s.recurrence;
+    return `
+      <li>
+        <div class="item-info">
+          <div class="item-title">[${s.type}] ${s.name}</div>
+          <div class="item-sub">${daysStr} ${timeStr ? '• ' + timeStr : ''} ${s.role ? '• ' + s.role : ''}</div>
+        </div>
+        <button class="del-btn" onclick="deleteItem('schedules', ${i})">X</button>
+      </li>
+    `;
+  }).join('');
+
   document.getElementById('full-schedule-list').innerHTML = schedHTML;
   document.getElementById('today-schedule-list').innerHTML = schedHTML || '<li class="item-sub">No classes or clubs added yet.</li>';
 
@@ -292,12 +306,14 @@ function renderAll() {
   let total = 0;
   document.getElementById('wish-list').innerHTML = data.wishes.map((w, i) => {
     total += w.price;
+    let linkHTML = w.link ? `<a href="${w.link}" target="_blank" class="btn-small" style="text-decoration:none; margin-right:4px;">Link</a>` : '';
     return `
       <li>
         <div class="item-info">
           <div class="item-title">${w.name}</div>
           <div class="item-sub">$${w.price.toFixed(2)}</div>
         </div>
+        ${linkHTML}
         <button class="del-btn" onclick="deleteItem('wishes', ${i})">X</button>
       </li>
     `;
