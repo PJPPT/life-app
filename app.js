@@ -63,10 +63,11 @@ function saveScratchpad() {
   localStorage.setItem('lifeOSData', JSON.stringify(data));
 }
 
-// Schedules & Auto-Resume
+// Schedules, Events & Auto-Resume
 function addScheduleItem() {
   const type = document.getElementById('sched-type').value;
   const name = document.getElementById('sched-name').value.trim();
+  const date = document.getElementById('sched-date').value;
   const timeStart = document.getElementById('sched-time-start').value;
   const timeEnd = document.getElementById('sched-time-end').value;
   const recurrence = document.getElementById('sched-recurrence').value;
@@ -81,9 +82,18 @@ function addScheduleItem() {
   const role = document.getElementById('sched-role').value.trim();
   if (!name) return;
 
-  data.schedules.push({ type, name, timeStart, timeEnd, recurrence, days: selectedDays, role });
+  data.schedules.push({ type, name, date, timeStart, timeEnd, recurrence, days: selectedDays, role });
   
+  // Sort schedules: Dated events come first sorted chronologically, then others
+  data.schedules.sort((a, b) => {
+    if (a.date && b.date) return new Date(a.date) - new Date(b.date);
+    if (a.date) return -1;
+    if (b.date) return 1;
+    return 0;
+  });
+
   document.getElementById('sched-name').value = '';
+  document.getElementById('sched-date').value = '';
   document.getElementById('sched-time-start').value = '';
   document.getElementById('sched-time-end').value = '';
   document.getElementById('sched-role').value = '';
@@ -94,11 +104,13 @@ function addScheduleItem() {
 // Books
 function addBook() {
   const title = document.getElementById('book-title').value.trim();
+  const series = document.getElementById('book-series').value.trim();
   const status = document.getElementById('book-status').value;
   const progress = document.getElementById('book-progress').value.trim();
   if (!title) return;
-  data.books.push({ title, status, progress });
+  data.books.push({ title, series, status, progress });
   document.getElementById('book-title').value = '';
+  document.getElementById('book-series').value = '';
   document.getElementById('book-progress').value = '';
   saveData();
 }
@@ -113,12 +125,14 @@ function cycleBookStatus(index) {
 // Shows & Movies
 function addShow() {
   const title = document.getElementById('show-title').value.trim();
+  const series = document.getElementById('show-series').value.trim();
   const type = document.getElementById('show-type').value;
   const status = document.getElementById('show-status').value;
   const note = document.getElementById('show-note').value.trim();
   if (!title) return;
-  data.shows.push({ title, type, status, note });
+  data.shows.push({ title, series, type, status, note });
   document.getElementById('show-title').value = '';
+  document.getElementById('show-series').value = '';
   document.getElementById('show-note').value = '';
   saveData();
 }
@@ -215,15 +229,15 @@ function renderAll() {
     </li>
   `).join('');
 
-  // Schedules & Resume
+  // Schedules & Events Sorted
   const schedHTML = data.schedules.map((s, i) => {
     let timeStr = (s.timeStart || s.timeEnd) ? `${s.timeStart || ''} - ${s.timeEnd || ''}` : '';
-    let daysStr = Array.isArray(s.days) ? s.days.join(', ') : s.recurrence;
+    let scheduleDetail = s.date ? `📅 ${s.date}` : (Array.isArray(s.days) ? s.days.join(', ') : s.recurrence);
     return `
       <li>
         <div class="item-info">
           <div class="item-title">[${s.type}] ${s.name}</div>
-          <div class="item-sub">${daysStr} ${timeStr ? '• ' + timeStr : ''} ${s.role ? '• ' + s.role : ''}</div>
+          <div class="item-sub">${scheduleDetail} ${timeStr ? '• ' + timeStr : ''} ${s.role ? '• ' + s.role : ''}</div>
         </div>
         <button class="del-btn" onclick="deleteItem('schedules', ${i})">X</button>
       </li>
@@ -231,7 +245,7 @@ function renderAll() {
   }).join('');
 
   document.getElementById('full-schedule-list').innerHTML = schedHTML;
-  document.getElementById('today-schedule-list').innerHTML = schedHTML || '<li class="item-sub">No classes or clubs added yet.</li>';
+  document.getElementById('today-schedule-list').innerHTML = schedHTML || '<li class="item-sub">No schedule items or events added yet.</li>';
 
   document.getElementById('resume-classes').innerHTML = data.schedules
     .filter(s => s.type === 'Class')
@@ -244,14 +258,14 @@ function renderAll() {
   document.getElementById('resume-projects').innerHTML = data.projects
     .map(p => `<li><strong>${p.name} (${p.category})</strong> — ${p.status}${p.notes ? ': ' + p.notes : ''}</li>`).join('') || '<li>Add projects in Projects tab</li>';
 
-  // Books
+  // Books with Series
   const renderBooks = (status) => data.books
     .map((b, i) => ({ ...b, i }))
     .filter(b => b.status === status)
     .map(b => `
       <li>
         <div class="item-info">
-          <div class="item-title">${b.title}</div>
+          <div class="item-title">${b.title} ${b.series ? '<span class="badge">' + b.series + '</span>' : ''}</div>
           <div class="item-sub">${b.progress || 'No progress note'}</div>
         </div>
         <button class="btn-small" onclick="cycleBookStatus(${b.i})">Move</button>
@@ -262,14 +276,14 @@ function renderAll() {
   document.getElementById('books-tbr').innerHTML = renderBooks('To Be Read');
   document.getElementById('books-finished').innerHTML = renderBooks('Finished');
 
-  // Shows & Movies
+  // Shows & Movies with Series
   const renderShows = (status) => data.shows
     .map((s, i) => ({ ...s, i }))
     .filter(s => s.status === status)
     .map(s => `
       <li>
         <div class="item-info">
-          <div class="item-title">${s.title} <span class="badge">${s.type}</span></div>
+          <div class="item-title">${s.title} <span class="badge">${s.type}</span> ${s.series ? '<span class="badge" style="background:#e0f2fe; color:#0369a1;">' + s.series + '</span>' : ''}</div>
           <div class="item-sub">${s.note || ''}</div>
         </div>
         <button class="btn-small" onclick="cycleShowStatus(${s.i})">Move</button>
