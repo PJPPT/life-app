@@ -256,7 +256,7 @@ button, .btn-outline, .file-label {
 .resume-list li { margin-bottom: 6px; font-size: 0.9rem; }
 hr { border: none; border-top: 1px solid var(--border); margin: 10px 0; }
 
-/* Bottom Navigation */
+/* Horizontally Scrollable Bottom Navigation */
 .bottom-nav {
   position: fixed;
   bottom: 0;
@@ -264,18 +264,26 @@ hr { border: none; border-top: 1px solid var(--border); margin: 10px 0; }
   right: 0;
   background: var(--card);
   display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
   border-top: 1px solid var(--border);
-  padding: 6px 4px 16px;
+  padding: 8px 12px 18px;
   z-index: 20;
 }
 
+.bottom-nav::-webkit-scrollbar {
+  display: none;
+}
+
 .nav-btn {
-  flex: 1;
+  flex: 0 0 auto;
   background: transparent;
   color: var(--muted);
-  font-size: 0.75rem;
-  padding: 8px 4px;
-  border-radius: 8px;
+  font-size: 0.85rem;
+  padding: 10px 16px;
+  border-radius: 10px;
 }
 
 .nav-btn.active {
