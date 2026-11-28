@@ -69,9 +69,9 @@
 
           <div class="calendar-card">
             <div class="row space-between" style="margin-bottom: 8px;">
-              <button onclick="changeMonth(-1)" class="btn-small">← Prev</button>
+              <button onclick="changeMonth(-1)" class="btn-small">&larr; Prev</button>
               <h3 id="cal-month-title" style="margin:0; text-transform:none;">Month Year</h3>
-              <button onclick="changeMonth(1)" class="btn-small">Next →</button>
+              <button onclick="changeMonth(1)" class="btn-small">Next &rarr;</button>
             </div>
             <div class="calendar-grid-header">
               <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
@@ -318,9 +318,12 @@
 
     <!-- TAB 4: PROJECTS, AWARDS, GOALS & WISH LIST -->
     <section id="tab-life" class="tab-page">
-      <div class="card">
-        <h2>Projects (Art, Robotics, etc.)</h2>
-        <div class="row">
+      <div class="card" id="project-form-card">
+        <div class="row space-between">
+          <h2 id="project-form-title" style="margin:0;">Projects (Art, Robotics, etc.)</h2>
+          <button id="project-cancel-edit" onclick="cancelEdit('project')" class="btn-small" style="display:none; background:#fee2e2; color:#dc2626;">Cancel</button>
+        </div>
+        <div class="row" style="margin-top:8px;">
           <select id="proj-category">
             <option value="Robotics">Robotics</option>
             <option value="Art">Art</option>
@@ -333,44 +336,195 @@
         </div>
         <input type="text" id="proj-name" placeholder="Project Name">
         <input type="text" id="proj-notes" placeholder="Next step or materials needed">
-        <button onclick="addProject()" class="btn-primary">Add Project</button>
+        <button id="project-submit-btn" onclick="addProject()" class="btn-primary">Add Project</button>
         <ul id="project-list" class="item-list"></ul>
       </div>
 
-      <div class="card">
-        <h2>Awards & Honors (Auto-Resume)</h2>
-        <input type="text" id="award-name" placeholder="Award Title (e.g., Regional Robotics Finalist)">
+      <div class="card" id="award-form-card">
+        <div class="row space-between">
+          <h2 id="award-form-title" style="margin:0;">Awards & Honors</h2>
+          <button id="award-cancel-edit" onclick="cancelEdit('award')" class="btn-small" style="display:none; background:#fee2e2; color:#dc2626;">Cancel</button>
+        </div>
+        <input type="text" id="award-name" placeholder="Award Title (e.g., Regional Robotics Finalist)" style="margin-top:8px;">
         <div class="row">
           <input type="text" id="award-org" placeholder="Organization / Event">
           <input type="text" id="award-date" placeholder="Year / Date" style="max-width:120px;">
         </div>
-        <button onclick="addAward()" class="btn-primary">Add Award</button>
+        <button id="award-submit-btn" onclick="addAward()" class="btn-primary">Add Award</button>
         <ul id="award-list" class="item-list"></ul>
       </div>
 
-      <div class="card">
-        <h2>Life Goals</h2>
-        <div class="input-group">
+      <div class="card" id="goal-form-card">
+        <div class="row space-between">
+          <h2 id="goal-form-title" style="margin:0;">Life Goals</h2>
+          <button id="goal-cancel-edit" onclick="cancelEdit('goal')" class="btn-small" style="display:none; background:#fee2e2; color:#dc2626;">Cancel</button>
+        </div>
+        <div class="input-group" style="margin-top:8px;">
           <input type="text" id="goal-input" placeholder="Add a short or long-term goal...">
-          <button onclick="addGoal()" class="btn-primary">Add</button>
+          <button id="goal-submit-btn" onclick="addGoal()" class="btn-primary">Add</button>
         </div>
         <ul id="goal-list" class="item-list"></ul>
       </div>
 
-      <div class="card">
+      <div class="card" id="wish-form-card">
         <div class="row space-between">
-          <h2>Shopping Wish List</h2>
-          <span class="badge">Total: $<span id="wish-total">0.00</span></span>
+          <h2 id="wish-form-title" style="margin:0;">Shopping Wish List</h2>
+          <div class="row">
+            <button id="wish-cancel-edit" onclick="cancelEdit('wish')" class="btn-small" style="display:none; background:#fee2e2; color:#dc2626;">Cancel</button>
+            <span class="badge">Total: $<span id="wish-total">0.00</span></span>
+          </div>
         </div>
-        <input type="text" id="wish-name" placeholder="Item name">
+        <input type="text" id="wish-name" placeholder="Item name" style="margin-top:8px;">
         <input type="url" id="wish-link" placeholder="Paste item web link (URL)">
         <input type="number" id="wish-price" placeholder="Price ($)" step="0.01">
-        <button onclick="addWish()" class="btn-primary">Add to Wish List</button>
+        <button id="wish-submit-btn" onclick="addWish()" class="btn-primary">Add to Wish List</button>
         <ul id="wish-list" class="item-list"></ul>
       </div>
     </section>
 
-    <!-- TAB 5: STOCKS -->
+    <!-- TAB 5: MONEY & PARENT DEBT TRACKER -->
+    <section id="tab-money" class="tab-page">
+      <!-- PARENT DEBT CALCULATOR -->
+      <div class="card">
+        <div class="row space-between" style="margin-bottom: 10px;">
+          <h2 style="margin:0;">Debt Owed to Parents</h2>
+          <span class="badge" id="parent-debt-total" style="background:#fee2e2; color:#dc2626;">Owed: $0.00</span>
+        </div>
+        <p class="subtitle" style="margin-bottom:8px;">Track things your parents paid for that you need to pay back, or log repayments.</p>
+        <div class="row">
+          <select id="debt-type">
+            <option value="owe">+ Add to Debt (They Paid)</option>
+            <option value="pay">- Paid Back (Repayment)</option>
+          </select>
+          <input type="number" id="debt-amount" placeholder="Amount ($)" step="0.01">
+        </div>
+        <input type="text" id="debt-desc" placeholder="What was it for? (e.g., Concert ticket, Boba, Paid cash)">
+        <button onclick="addParentDebt()" class="btn-primary">Record Entry</button>
+        <ul id="parent-debt-list" class="item-list"></ul>
+      </div>
+
+      <!-- PERSONAL EXPENSE & INCOME TRACKER -->
+      <div class="card">
+        <div class="row space-between" style="margin-bottom: 10px;">
+          <h2 style="margin:0;">My Expenses & Income</h2>
+          <span class="badge" id="personal-balance-total">Net: $0.00</span>
+        </div>
+        <div class="row">
+          <select id="exp-type">
+            <option value="expense">- Expense (Spent)</option>
+            <option value="income">+ Income / Allowance</option>
+          </select>
+          <select id="exp-category">
+            <option value="Food">Food & Drinks</option>
+            <option value="Shopping">Shopping</option>
+            <option value="Robotics/School">Robotics / School</option>
+            <option value="Fun">Hangouts / Fun</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="row">
+          <input type="text" id="exp-desc" placeholder="Description">
+          <input type="number" id="exp-amount" placeholder="Amount ($)" step="0.01" style="max-width:120px;">
+        </div>
+        <button onclick="addExpense()" class="btn-primary">Add Transaction</button>
+        <ul id="expense-list" class="item-list"></ul>
+      </div>
+    </section>
+
+    <!-- TAB 6: COLLEGE PREP & COURSE PLAN -->
+    <section id="tab-college" class="tab-page">
+      <!-- DREAM SCHOOL ACTION PLAN -->
+      <div class="card">
+        <h2>Dream School Action Plan</h2>
+        <p class="subtitle" style="margin-bottom:6px;">Your master roadmap, target test scores, extracurricular goals, and essay ideas:</p>
+        <textarea id="dream-school-plan" rows="4" placeholder="Write your plan for getting into your dream school..." oninput="saveDreamPlan()"></textarea>
+      </div>
+
+      <!-- PROSPECTIVE COLLEGES -->
+      <div class="card" id="college-form-card">
+        <div class="row space-between">
+          <h2 id="college-form-title" style="margin:0;">Prospective Colleges</h2>
+          <button id="college-cancel-edit" onclick="cancelEdit('college')" class="btn-small" style="display:none; background:#fee2e2; color:#dc2626;">Cancel</button>
+        </div>
+        <div class="row" style="margin-top:8px;">
+          <input type="text" id="col-name" placeholder="College Name (e.g., Georgia Tech, MIT)">
+          <select id="col-tier" style="max-width:140px;">
+            <option value="Dream">Dream School</option>
+            <option value="Target">Target</option>
+            <option value="Safety">Safety</option>
+          </select>
+        </div>
+        <input type="text" id="col-notes" placeholder="Major, location, deadline, or notes">
+        <button id="college-submit-btn" onclick="addCollege()" class="btn-primary">Add College</button>
+        <ul id="college-list" class="item-list"></ul>
+      </div>
+
+      <!-- 4-YEAR HIGH SCHOOL COURSE PLAN -->
+      <div class="card">
+        <h2>4-Year High School Course Plan</h2>
+        <div class="row">
+          <select id="course-grade" style="max-width:130px;">
+            <option value="9th Grade">9th Grade</option>
+            <option value="10th Grade">10th Grade</option>
+            <option value="11th Grade">11th Grade</option>
+            <option value="12th Grade">12th Grade</option>
+          </select>
+          <select id="course-status" style="max-width:130px;">
+            <option value="Planned">Planned</option>
+            <option value="Taking">Taking Now</option>
+            <option value="Completed">Completed</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <input type="text" id="course-name" placeholder="Course Name (e.g., AP Calculus BC, AP Physics)">
+          <button onclick="addCoursePlan()" class="btn-primary">Add</button>
+        </div>
+        
+        <div id="course-plan-container" style="margin-top:10px;"></div>
+      </div>
+
+      <!-- SCHOLARSHIPS (SINGLE + BULK PASTE) -->
+      <div class="card" id="scholarship-form-card">
+        <div class="row space-between">
+          <h2 id="scholarship-form-title" style="margin:0;">Scholarships Tracker</h2>
+          <div class="row">
+            <button id="scholarship-cancel-edit" onclick="cancelEdit('scholarship')" class="btn-small" style="display:none; background:#fee2e2; color:#dc2626;">Cancel</button>
+            <button onclick="toggleBulkScholarship()" class="btn-small" style="background:#fef08a; color:#854d0e;">Paste Giant List</button>
+          </div>
+        </div>
+
+        <!-- BULK PASTE BOX -->
+        <div id="bulk-scholarship-box" style="display:none; background:var(--bg); padding:10px; border-radius:10px; margin-top:8px;">
+          <p class="small-text"><strong>Paste your list below (one scholarship per line):</strong><br>Format tip: <code>Name | Amount | Deadline | Materials & Info</code> (or just paste raw lines and edit them later!)</p>
+          <textarea id="bulk-scholarship-text" rows="5" placeholder="Coca-Cola Scholars | $20,000 | Oct 31 | Transcript, 2 essays&#10;Gates Scholarship | Full Ride | Sept 15 | Essays, LORs"></textarea>
+          <button onclick="importBulkScholarships()" class="btn-primary">Import All Lines</button>
+        </div>
+
+        <!-- SINGLE ADD / EDIT FORM -->
+        <div style="margin-top:8px;">
+          <div class="row">
+            <input type="text" id="schol-name" placeholder="Scholarship Name">
+            <input type="text" id="schol-amount" placeholder="Amount ($)" style="max-width:120px;">
+          </div>
+          <div class="row">
+            <input type="text" id="schol-deadline" placeholder="Deadline (e.g., Nov 15)">
+            <select id="schol-status" style="max-width:130px;">
+              <option value="To Apply">To Apply</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Submitted">Submitted</option>
+              <option value="Won">Won!</option>
+            </select>
+          </div>
+          <input type="text" id="schol-materials" placeholder="Required Materials (e.g., 500-word essay, 2 rec letters)">
+          <input type="text" id="schol-info" placeholder="Eligibility info, link, or extra notes">
+          <button id="scholarship-submit-btn" onclick="addScholarship()" class="btn-primary">Save Scholarship</button>
+        </div>
+
+        <ul id="scholarship-list" class="item-list"></ul>
+      </div>
+    </section>
+
+    <!-- TAB 7: STOCKS -->
     <section id="tab-stocks" class="tab-page">
       <div class="card">
         <div class="row space-between" style="margin-bottom: 10px;">
@@ -399,6 +553,8 @@
     <button class="nav-btn" onclick="switchTab('schedule', this)">Schedule & Resume</button>
     <button class="nav-btn" onclick="switchTab('media', this)">Books & Shows</button>
     <button class="nav-btn" onclick="switchTab('life', this)">Projects & Goals</button>
+    <button class="nav-btn" onclick="switchTab('money', this)">Money & Debt</button>
+    <button class="nav-btn" onclick="switchTab('college', this)">College</button>
     <button class="nav-btn" onclick="switchTab('stocks', this)">Stocks</button>
   </nav>
 
