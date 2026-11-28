@@ -232,28 +232,8 @@
       </div>
     </section>
 
-    <!-- TAB 4: PROJECTS, GOALS, STOCKS & WISH LIST -->
+    <!-- TAB 4: PROJECTS, GOALS & WISH LIST -->
     <section id="tab-life" class="tab-page">
-      
-      <!-- STOCK TRACKER -->
-      <div class="card">
-        <div class="row space-between">
-          <h2>Stock Tracker</h2>
-          <span class="badge" id="stock-total-profit">Profit: $0.00</span>
-        </div>
-        <div class="row">
-          <input type="text" id="stock-symbol" placeholder="Ticker (e.g., AAPL)" style="text-transform:uppercase;">
-          <input type="number" id="stock-shares" placeholder="Shares" step="any">
-        </div>
-        <div class="row">
-          <input type="number" id="stock-buy" placeholder="Buy Price ($)" step="any">
-          <input type="number" id="stock-curr" placeholder="Current Price ($)" step="any">
-        </div>
-        <button onclick="addStock()" class="btn-primary">Add Stock</button>
-        <ul id="stock-list" class="item-list"></ul>
-      </div>
-
-      <!-- PROJECTS -->
       <div class="card">
         <h2>Projects (Art, Robotics, etc.)</h2>
         <div class="row">
@@ -273,7 +253,6 @@
         <ul id="project-list" class="item-list"></ul>
       </div>
 
-      <!-- LIFE GOALS -->
       <div class="card">
         <h2>Life Goals</h2>
         <div class="input-group">
@@ -283,7 +262,6 @@
         <ul id="goal-list" class="item-list"></ul>
       </div>
 
-      <!-- WISH LIST -->
       <div class="card">
         <div class="row space-between">
           <h2>Shopping Wish List</h2>
@@ -297,14 +275,35 @@
       </div>
     </section>
 
+    <!-- TAB 5: STOCKS -->
+    <section id="tab-stocks" class="tab-page">
+      <div class="card">
+        <div class="row space-between">
+          <h2>Stock Portfolio Tracker</h2>
+          <span class="badge" id="stock-total-profit">Profit: $0.00</span>
+        </div>
+        <div class="row">
+          <input type="text" id="stock-symbol" placeholder="Ticker (e.g., AAPL)" style="text-transform:uppercase;">
+          <input type="number" id="stock-shares" placeholder="Shares" step="any">
+        </div>
+        <div class="row">
+          <input type="number" id="stock-buy" placeholder="Buy Price ($)" step="any">
+          <input type="number" id="stock-curr" placeholder="Current Price ($)" step="any">
+        </div>
+        <button onclick="addStock()" class="btn-primary">Add Stock</button>
+        <ul id="stock-list" class="item-list"></ul>
+      </div>
+    </section>
+
   </main>
 
   <!-- BOTTOM NAVIGATION BAR -->
   <nav class="bottom-nav no-print">
     <button class="nav-btn active" onclick="switchTab('today', this)">Today</button>
-    <button class="nav-btn" onclick="switchTab('schedule', this)">Schedule & Resume</button>
-    <button class="nav-btn" onclick="switchTab('media', this)">Books & Shows</button>
-    <button class="nav-btn" onclick="switchTab('life', this)">Projects & Stocks</button>
+    <button class="nav-btn" onclick="switchTab('schedule', this)">Schedule</button>
+    <button class="nav-btn" onclick="switchTab('media', this)">Media</button>
+    <button class="nav-btn" onclick="switchTab('life', this)">Life/Goals</button>
+    <button class="nav-btn" onclick="switchTab('stocks', this)">Stocks</button>
   </nav>
 
   <script src="app.js"></script>
