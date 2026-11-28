@@ -1,16 +1,22 @@
 let data = JSON.parse(localStorage.getItem('lifeOSData')) || {
   water: 0,
   cycleStatus: 'Follicular Phase',
-  periodDates: [], // Array of YYYY-MM-DD strings
+  periodDates: [],
+  periodHidden: false,
   todos: [],
   scratchpad: '',
   schedules: [],
   books: [],
   shows: [],
+  stocks: [],
   projects: [],
   goals: [],
   wishes: []
 };
+
+// Ensure older saved backups don't break if stocks/periodHidden didn't exist yet
+if (!data.stocks) data.stocks = [];
+if (typeof data.periodHidden === 'undefined') data.periodHidden = false;
 
 let currentCalDate = new Date();
 
@@ -39,11 +45,8 @@ function toggleSchedFields() {
   const type = document.getElementById('sched-type').value;
   const recurrence = document.getElementById('sched-recurrence').value;
   
-  const dateContainer = document.getElementById('date-field-container');
-  const daysContainer = document.getElementById('days-field-container');
-  
-  dateContainer.style.display = (type === 'Event') ? 'block' : 'none';
-  daysContainer.style.display = (recurrence === 'Custom Days') ? 'flex' : 'none';
+  document.getElementById('date-field-container').style.display = (type === 'Event') ? 'block' : 'none';
+  document.getElementById('days-field-container').style.display = (recurrence === 'Custom Days') ? 'flex' : 'none';
 }
 
 // Health: Water & Cycle
@@ -56,12 +59,17 @@ function resetWater() {
   saveData();
 }
 
+function togglePeriodVisibility() {
+  data.periodHidden = !data.periodHidden;
+  saveData();
+}
+
 function updateCycleStatus() {
   data.cycleStatus = document.getElementById('cycle-status-select').value;
   saveData();
 }
 
-// Calendar Period Tracker Logic
+// Calendar Period Tracker & Predictor Logic
 function changeMonth(direction) {
   currentCalDate.setMonth(currentCalDate.getMonth() + direction);
   renderCalendar();
@@ -74,7 +82,31 @@ function togglePeriodDate(dateString) {
   } else {
     data.periodDates.push(dateString);
   }
+  data.periodDates.sort();
   saveData();
+}
+
+function getPredictedPeriodDate() {
+  if (!data.periodDates || data.periodDates.length === 0) return null;
+  const sorted = [...data.periodDates].sort();
+  
+  // Find the start day of the most recent logged period cluster
+  let cycleStartStr = sorted[sorted.length - 1];
+  for (let i = sorted.length - 1; i > 0; i--) {
+    const curr = new Date(sorted[i] + 'T00:00:00');
+    const prev = new Date(sorted[i - 1] + 'T00:00:00');
+    const diffDays = (curr - prev) / (1000 * 60 * 60 * 24);
+    if (diffDays <= 2) {
+      cycleStartStr = sorted[i - 1];
+    } else {
+      break;
+    }
+  }
+
+  const startDate = new Date(cycleStartStr + 'T00:00:00');
+  const nextDate = new Date(startDate);
+  nextDate.setDate(startDate.getDate() + 28);
+  return nextDate;
 }
 
 function renderCalendar() {
@@ -142,7 +174,6 @@ function addScheduleItem() {
 
   data.schedules.push({ type, name, date, timeStart, timeEnd, recurrence, days: selectedDays, role });
   
-  // Sort schedules: Dated events come first sorted chronologically, then others
   data.schedules.sort((a, b) => {
     if (a.date && b.date) return new Date(a.date) - new Date(b.date);
     if (a.date) return -1;
@@ -202,6 +233,31 @@ function cycleShowStatus(index) {
   const current = order.indexOf(data.shows[index].status);
   data.shows[index].status = order[(current + 1) % order.length];
   saveData();
+}
+
+// Stock Tracker
+function addStock() {
+  const symbol = document.getElementById('stock-symbol').value.trim().toUpperCase();
+  const shares = parseFloat(document.getElementById('stock-shares').value) || 1;
+  const buy = parseFloat(document.getElementById('stock-buy').value);
+  const curr = parseFloat(document.getElementById('stock-curr').value);
+  
+  if (!symbol || isNaN(buy) || isNaN(curr)) return;
+  data.stocks.push({ symbol, shares, buy, curr });
+  
+  document.getElementById('stock-symbol').value = '';
+  document.getElementById('stock-shares').value = '';
+  document.getElementById('stock-buy').value = '';
+  document.getElementById('stock-curr').value = '';
+  saveData();
+}
+
+function updateStockPrice(index) {
+  const newPrice = prompt(`Enter new current price for ${data.stocks[index].symbol}:`, data.stocks[index].curr);
+  if (newPrice !== null && !isNaN(parseFloat(newPrice))) {
+    data.stocks[index].curr = parseFloat(newPrice);
+    saveData();
+  }
 }
 
 // Projects, Goals, Wish List
@@ -275,7 +331,29 @@ function renderAll() {
   document.getElementById('water-count').textContent = data.water;
   document.getElementById('scratchpad').value = data.scratchpad || '';
 
-  // Cycle Status
+  // Period Visibility & Predictor
+  const periodContent = document.getElementById('period-tracker-content');
+  const toggleBtn = document.getElementById('toggle-period-btn');
+  if (data.periodHidden) {
+    periodContent.style.display = 'none';
+    toggleBtn.textContent = 'Show';
+  } else {
+    periodContent.style.display = 'block';
+    toggleBtn.textContent = 'Hide';
+  }
+
+  const nextPeriod = getPredictedPeriodDate();
+  const predOption = document.getElementById('predicted-phase-option');
+  const predText = document.getElementById('period-prediction-text');
+  if (nextPeriod) {
+    const formattedPred = nextPeriod.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    predOption.textContent = `Predicted Next Period: ${formattedPred}`;
+    predText.textContent = `Estimated Next Period: ${formattedPred} (28-day cycle)`;
+  } else {
+    predOption.textContent = `Predicted Next: Log dates below`;
+    predText.textContent = `Tap dates on the calendar to predict your next cycle.`;
+  }
+
   if (data.cycleStatus) {
     document.getElementById('cycle-status-select').value = data.cycleStatus;
   }
@@ -355,6 +433,33 @@ function renderAll() {
   document.getElementById('shows-watchlist').innerHTML = renderShows('Watchlist');
   document.getElementById('shows-finished').innerHTML = renderShows('Finished');
 
+  // Stocks
+  let totalStockProfit = 0;
+  document.getElementById('stock-list').innerHTML = data.stocks.map((st, i) => {
+    const profit = (st.curr - st.buy) * st.shares;
+    const pct = st.buy > 0 ? (((st.curr - st.buy) / st.buy) * 100).toFixed(1) : '0.0';
+    totalStockProfit += profit;
+    const isGain = profit >= 0;
+    const colorStyle = isGain ? 'color:#16a34a; font-weight:700;' : 'color:#dc2626; font-weight:700;';
+    const sign = isGain ? '+' : '';
+    return `
+      <li>
+        <div class="item-info">
+          <div class="item-title">${st.symbol} <span class="item-sub">(${st.shares} sh @ $${st.buy.toFixed(2)})</span></div>
+          <div class="item-sub">Curr: $${st.curr.toFixed(2)} • <span style="${colorStyle}">${sign}$${profit.toFixed(2)} (${sign}${pct}%)</span></div>
+        </div>
+        <button class="btn-small" onclick="updateStockPrice(${i})">Update $</button>
+        <button class="del-btn" onclick="deleteItem('stocks', ${i})">X</button>
+      </li>
+    `;
+  }).join('');
+
+  const totalProfitEl = document.getElementById('stock-total-profit');
+  const totalSign = totalStockProfit >= 0 ? '+' : '';
+  totalProfitEl.textContent = `Profit: ${totalSign}$${totalStockProfit.toFixed(2)}`;
+  totalProfitEl.style.background = totalStockProfit >= 0 ? '#dcfce7' : '#fee2e2';
+  totalProfitEl.style.color = totalStockProfit >= 0 ? '#166534' : '#991b1b';
+
   // Projects
   document.getElementById('project-list').innerHTML = data.projects.map((p, i) => `
     <li>
@@ -397,4 +502,4 @@ function renderAll() {
 }
 
 renderAll();
-toggleSchedFields(); // Run on load to set initial hidden/visible states
+toggleSchedFields();
