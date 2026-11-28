@@ -83,7 +83,7 @@
       </div>
 
       <div class="card">
-        <h2>Upcoming Schedule & Events</h2>
+        <h2>Today's Schedule & Events</h2>
         <ul id="today-schedule-list" class="item-list"></ul>
       </div>
 
@@ -125,11 +125,14 @@
           <input type="time" id="sched-time-end">
         </div>
 
-        <select id="sched-recurrence" onchange="toggleSchedFields()">
-          <option value="Everyday">Everyday</option>
-          <option value="Weekdays (Mon-Fri)">Weekdays (Mon-Fri)</option>
-          <option value="Custom Days">Custom Days</option>
-        </select>
+        <div id="recurrence-field-container">
+          <select id="sched-recurrence" onchange="toggleSchedFields()">
+            <option value="Everyday">Everyday</option>
+            <option value="Weekdays (Mon-Fri)">Weekdays (Mon-Fri)</option>
+            <option value="Custom Days">Custom Days (Weekly)</option>
+            <option value="Monthly">Once a Month</option>
+          </select>
+        </div>
 
         <div id="days-field-container" style="display: none;" class="day-selector row">
           <label><input type="checkbox" value="Mon"> Mon</label>
@@ -139,6 +142,25 @@
           <label><input type="checkbox" value="Fri"> Fri</label>
           <label><input type="checkbox" value="Sat"> Sat</label>
           <label><input type="checkbox" value="Sun"> Sun</label>
+        </div>
+
+        <div id="monthly-field-container" style="display: none;" class="row">
+          <select id="sched-monthly-week">
+            <option value="1">1st</option>
+            <option value="2">2nd</option>
+            <option value="3">3rd</option>
+            <option value="4">4th</option>
+            <option value="last">Last</option>
+          </select>
+          <select id="sched-monthly-day">
+            <option value="Mon">Monday</option>
+            <option value="Tue">Tuesday</option>
+            <option value="Wed">Wednesday</option>
+            <option value="Thu">Thursday</option>
+            <option value="Fri">Friday</option>
+            <option value="Sat">Saturday</option>
+            <option value="Sun">Sunday</option>
+          </select>
         </div>
 
         <input type="text" id="sched-role" placeholder="Role / Resume Description (e.g., Lead Builder)" style="margin-top:8px;">
@@ -155,7 +177,7 @@
           <h2>Auto-Generated Resume</h2>
           <button onclick="window.print()" class="btn-small no-print">Print / Save PDF</button>
         </div>
-        <p class="subtitle">Automatically synced from your Classes, Clubs & Completed Projects</p>
+        <p class="subtitle">Automatically synced from your Classes, Clubs, Projects & Awards</p>
         <hr>
         <h3>Education & Coursework</h3>
         <ul id="resume-classes" class="resume-list"></ul>
@@ -163,6 +185,8 @@
         <ul id="resume-clubs" class="resume-list"></ul>
         <h3>Projects & Achievements</h3>
         <ul id="resume-projects" class="resume-list"></ul>
+        <h3>Honors & Awards</h3>
+        <ul id="resume-awards" class="resume-list"></ul>
       </div>
     </section>
 
@@ -175,10 +199,13 @@
 
       <!-- BOOKS SECTION -->
       <div id="media-books" class="media-section active">
-        <div class="card">
-          <h2>Add a Book</h2>
+        <div class="card" id="book-form-card">
+          <div class="row space-between">
+            <h2 id="book-form-title" style="margin:0;">Add a Book</h2>
+            <button id="book-cancel-edit" onclick="cancelEdit('book')" class="btn-small" style="display:none; background:#fee2e2; color:#dc2626;">Cancel Edit</button>
+          </div>
           
-          <label class="row" style="margin-bottom:8px; font-size:0.9rem; cursor:pointer;">
+          <label class="row" id="book-entire-wrap" style="margin:8px 0; font-size:0.9rem; cursor:pointer;">
             <input type="checkbox" id="book-entire-series" onchange="toggleEntireSeries('book')" style="width:auto; margin:0;">
             <span>I have read the entire series (skip individual books)</span>
           </label>
@@ -214,7 +241,7 @@
 
           <textarea id="book-summary" rows="2" placeholder="Optional summary (visible when finished)..." style="display:none; margin-top:8px;"></textarea>
           
-          <button onclick="addBook()" class="btn-primary" style="margin-top:8px;">Save Book</button>
+          <button id="book-submit-btn" onclick="addBook()" class="btn-primary" style="margin-top:8px;">Save Book</button>
         </div>
 
         <div class="card">
@@ -229,10 +256,13 @@
 
       <!-- SHOWS & MOVIES SECTION -->
       <div id="media-shows" class="media-section">
-        <div class="card">
-          <h2>Add Show or Movie</h2>
+        <div class="card" id="show-form-card">
+          <div class="row space-between">
+            <h2 id="show-form-title" style="margin:0;">Add Show or Movie</h2>
+            <button id="show-cancel-edit" onclick="cancelEdit('show')" class="btn-small" style="display:none; background:#fee2e2; color:#dc2626;">Cancel Edit</button>
+          </div>
 
-          <label class="row" style="margin-bottom:8px; font-size:0.9rem; cursor:pointer;">
+          <label class="row" id="show-entire-wrap" style="margin:8px 0; font-size:0.9rem; cursor:pointer;">
             <input type="checkbox" id="show-entire-series" onchange="toggleEntireSeries('show')" style="width:auto; margin:0;">
             <span>I have watched the entire series / franchise</span>
           </label>
@@ -272,7 +302,7 @@
           <input type="text" id="show-note" placeholder="Season/Ep or Rating (e.g., S2 E4 or 10/10)">
           <textarea id="show-summary" rows="2" placeholder="Optional summary (visible when finished)..." style="display:none; margin-top:8px;"></textarea>
 
-          <button onclick="addShow()" class="btn-primary" style="margin-top:8px;">Save Show / Movie</button>
+          <button id="show-submit-btn" onclick="addShow()" class="btn-primary" style="margin-top:8px;">Save Show / Movie</button>
         </div>
 
         <div class="card">
@@ -286,7 +316,7 @@
       </div>
     </section>
 
-    <!-- TAB 4: PROJECTS, GOALS & WISH LIST -->
+    <!-- TAB 4: PROJECTS, AWARDS, GOALS & WISH LIST -->
     <section id="tab-life" class="tab-page">
       <div class="card">
         <h2>Projects (Art, Robotics, etc.)</h2>
@@ -305,6 +335,17 @@
         <input type="text" id="proj-notes" placeholder="Next step or materials needed">
         <button onclick="addProject()" class="btn-primary">Add Project</button>
         <ul id="project-list" class="item-list"></ul>
+      </div>
+
+      <div class="card">
+        <h2>Awards & Honors (Auto-Resume)</h2>
+        <input type="text" id="award-name" placeholder="Award Title (e.g., Regional Robotics Finalist)">
+        <div class="row">
+          <input type="text" id="award-org" placeholder="Organization / Event">
+          <input type="text" id="award-date" placeholder="Year / Date" style="max-width:120px;">
+        </div>
+        <button onclick="addAward()" class="btn-primary">Add Award</button>
+        <ul id="award-list" class="item-list"></ul>
       </div>
 
       <div class="card">
