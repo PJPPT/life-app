@@ -31,6 +31,18 @@ function switchMediaSub(subName, btn) {
   btn.classList.add('active');
 }
 
+// Toggle conditional schedule fields
+function toggleSchedFields() {
+  const type = document.getElementById('sched-type').value;
+  const recurrence = document.getElementById('sched-recurrence').value;
+  
+  const dateContainer = document.getElementById('date-field-container');
+  const daysContainer = document.getElementById('days-field-container');
+  
+  dateContainer.style.display = (type === 'Event') ? 'block' : 'none';
+  daysContainer.style.display = (recurrence === 'Custom Days') ? 'flex' : 'none';
+}
+
 // Health: Water & Cycle
 function changeWater(amount) {
   data.water = Math.max(0, data.water + amount);
@@ -98,6 +110,9 @@ function addScheduleItem() {
   document.getElementById('sched-time-end').value = '';
   document.getElementById('sched-role').value = '';
   document.querySelectorAll('.day-selector input').forEach(cb => cb.checked = false);
+  
+  // Reset fields view
+  toggleSchedFields();
   saveData();
 }
 
@@ -336,3 +351,4 @@ function renderAll() {
 }
 
 renderAll();
+toggleSchedFields(); // Run on load to set initial hidden/visible states
