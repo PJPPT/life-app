@@ -49,6 +49,54 @@ function toggleSchedFields() {
   document.getElementById('days-field-container').style.display = (recurrence === 'Custom Days') ? 'flex' : 'none';
 }
 
+// Toggle conditional series fields for Books & Shows
+function toggleMediaSeriesFields(prefix) {
+  const isSeries = document.getElementById(`${prefix}-is-series`).checked;
+  const container = document.getElementById(`${prefix}-series-container`);
+  container.style.display = isSeries ? 'block' : 'none';
+  if (isSeries) {
+    toggleNewSeriesInput(prefix);
+  }
+}
+
+function toggleNewSeriesInput(prefix) {
+  const selectVal = document.getElementById(`${prefix}-series-select`).value;
+  const newInput = document.getElementById(`${prefix}-series-new`);
+  newInput.style.display = (selectVal === '__new__') ? 'block' : 'none';
+}
+
+function populateSeriesDropdowns() {
+  // Populate Book Series Dropdown
+  const bookSeriesList = [...new Set(data.books.map(b => b.series).filter(Boolean))];
+  const bookSelect = document.getElementById('book-series-select');
+  const prevBookVal = bookSelect.value;
+  bookSelect.innerHTML = bookSeriesList.map(s => `<option value="${s.replace(/"/g, '"')}">${s}</option>`).join('') +
+    `<option value="__new__">+ Add New Series</option>`;
+  if (bookSeriesList.includes(prevBookVal)) {
+    bookSelect.value = prevBookVal;
+  } else if (bookSeriesList.length > 0 && prevBookVal !== '__new__') {
+    bookSelect.value = bookSeriesList[0];
+  } else {
+    bookSelect.value = '__new__';
+  }
+  toggleNewSeriesInput('book');
+
+  // Populate Show/Movie Series Dropdown
+  const showSeriesList = [...new Set(data.shows.map(s => s.series).filter(Boolean))];
+  const showSelect = document.getElementById('show-series-select');
+  const prevShowVal = showSelect.value;
+  showSelect.innerHTML = showSeriesList.map(s => `<option value="${s.replace(/"/g, '"')}">${s}</option>`).join('') +
+    `<option value="__new__">+ Add New Series</option>`;
+  if (showSeriesList.includes(prevShowVal)) {
+    showSelect.value = prevShowVal;
+  } else if (showSeriesList.length > 0 && prevShowVal !== '__new__') {
+    showSelect.value = showSeriesList[0];
+  } else {
+    showSelect.value = '__new__';
+  }
+  toggleNewSeriesInput('show');
+}
+
 // Health: Water & Cycle
 function changeWater(amount) {
   data.water = Math.max(0, data.water + amount);
@@ -191,17 +239,28 @@ function addScheduleItem() {
   saveData();
 }
 
-// Books with Series
+// Books with Series Dropdown
 function addBook() {
   const title = document.getElementById('book-title').value.trim();
-  const series = document.getElementById('book-series').value.trim();
+  const isSeries = document.getElementById('book-is-series').checked;
+  let series = '';
+  if (isSeries) {
+    const sel = document.getElementById('book-series-select').value;
+    series = (sel === '__new__')
+      ? document.getElementById('book-series-new').value.trim()
+      : sel;
+  }
   const status = document.getElementById('book-status').value;
   const progress = document.getElementById('book-progress').value.trim();
   if (!title) return;
+
   data.books.push({ title, series, status, progress });
+
   document.getElementById('book-title').value = '';
-  document.getElementById('book-series').value = '';
+  document.getElementById('book-series-new').value = '';
   document.getElementById('book-progress').value = '';
+  document.getElementById('book-is-series').checked = false;
+  toggleMediaSeriesFields('book');
   saveData();
 }
 
@@ -212,18 +271,29 @@ function cycleBookStatus(index) {
   saveData();
 }
 
-// Shows & Movies with Series
+// Shows & Movies with Series Dropdown
 function addShow() {
   const title = document.getElementById('show-title').value.trim();
-  const series = document.getElementById('show-series').value.trim();
+  const isSeries = document.getElementById('show-is-series').checked;
+  let series = '';
+  if (isSeries) {
+    const sel = document.getElementById('show-series-select').value;
+    series = (sel === '__new__')
+      ? document.getElementById('show-series-new').value.trim()
+      : sel;
+  }
   const type = document.getElementById('show-type').value;
   const status = document.getElementById('show-status').value;
   const note = document.getElementById('show-note').value.trim();
   if (!title) return;
+
   data.shows.push({ title, series, type, status, note });
+
   document.getElementById('show-title').value = '';
-  document.getElementById('show-series').value = '';
+  document.getElementById('show-series-new').value = '';
   document.getElementById('show-note').value = '';
+  document.getElementById('show-is-series').checked = false;
+  toggleMediaSeriesFields('show');
   saveData();
 }
 
@@ -419,6 +489,7 @@ function renderAll() {
   }
 
   renderCalendar();
+  populateSeriesDropdowns();
 
   // Todos
   document.getElementById('todo-list').innerHTML = data.todos.map((t, i) => `
@@ -563,3 +634,5 @@ function renderAll() {
 
 renderAll();
 toggleSchedFields();
+toggleMediaSeriesFields('book');
+toggleMediaSeriesFields('show');
