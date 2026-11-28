@@ -1,6 +1,7 @@
 let data = JSON.parse(localStorage.getItem('lifeOSData')) || {
   water: 0,
-  cycleStatus: 'Normal / Follicular',
+  cycleStatus: 'Follicular Phase',
+  periodDates: [], // Array of YYYY-MM-DD strings
   todos: [],
   scratchpad: '',
   schedules: [],
@@ -10,6 +11,8 @@ let data = JSON.parse(localStorage.getItem('lifeOSData')) || {
   goals: [],
   wishes: []
 };
+
+let currentCalDate = new Date();
 
 function saveData() {
   localStorage.setItem('lifeOSData', JSON.stringify(data));
@@ -56,6 +59,49 @@ function resetWater() {
 function updateCycleStatus() {
   data.cycleStatus = document.getElementById('cycle-status-select').value;
   saveData();
+}
+
+// Calendar Period Tracker Logic
+function changeMonth(direction) {
+  currentCalDate.setMonth(currentCalDate.getMonth() + direction);
+  renderCalendar();
+}
+
+function togglePeriodDate(dateString) {
+  const index = data.periodDates.indexOf(dateString);
+  if (index > -1) {
+    data.periodDates.splice(index, 1);
+  } else {
+    data.periodDates.push(dateString);
+  }
+  saveData();
+}
+
+function renderCalendar() {
+  const year = currentCalDate.getFullYear();
+  const month = currentCalDate.getMonth();
+  
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  document.getElementById('cal-month-title').textContent = `${monthNames[month]} ${year}`;
+
+  const firstDayIndex = new Date(year, month, 1).getDay();
+  const totalDays = new Date(year, month + 1, 0).getDate();
+
+  let calHTML = '';
+  for (let i = 0; i < firstDayIndex; i++) {
+    calHTML += `<div class="cal-day empty"></div>`;
+  }
+
+  for (let day = 1; day <= totalDays; day++) {
+    const formattedMonth = String(month + 1).padStart(2, '0');
+    const formattedDay = String(day).padStart(2, '0');
+    const dateStr = `${year}-${formattedMonth}-${formattedDay}`;
+    
+    const isPeriod = data.periodDates.includes(dateStr);
+    calHTML += `<div class="cal-day ${isPeriod ? 'period' : ''}" onclick="togglePeriodDate('${dateStr}')">${day}</div>`;
+  }
+
+  document.getElementById('calendar-days').innerHTML = calHTML;
 }
 
 // Todos & Scratchpad
@@ -111,12 +157,11 @@ function addScheduleItem() {
   document.getElementById('sched-role').value = '';
   document.querySelectorAll('.day-selector input').forEach(cb => cb.checked = false);
   
-  // Reset fields view
   toggleSchedFields();
   saveData();
 }
 
-// Books
+// Books with Series
 function addBook() {
   const title = document.getElementById('book-title').value.trim();
   const series = document.getElementById('book-series').value.trim();
@@ -137,7 +182,7 @@ function cycleBookStatus(index) {
   saveData();
 }
 
-// Shows & Movies
+// Shows & Movies with Series
 function addShow() {
   const title = document.getElementById('show-title').value.trim();
   const series = document.getElementById('show-series').value.trim();
@@ -233,8 +278,9 @@ function renderAll() {
   // Cycle Status
   if (data.cycleStatus) {
     document.getElementById('cycle-status-select').value = data.cycleStatus;
-    document.getElementById('cycle-display-status').textContent = `Current Phase: ${data.cycleStatus}`;
   }
+
+  renderCalendar();
 
   // Todos
   document.getElementById('todo-list').innerHTML = data.todos.map((t, i) => `
