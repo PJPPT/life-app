@@ -14,7 +14,6 @@ let data = JSON.parse(localStorage.getItem('lifeOSData')) || {
   wishes: []
 };
 
-// Ensure older saved backups don't break if stocks/periodHidden didn't exist yet
 if (!data.stocks) data.stocks = [];
 if (typeof data.periodHidden === 'undefined') data.periodHidden = false;
 
@@ -90,7 +89,6 @@ function getPredictedPeriodDate() {
   if (!data.periodDates || data.periodDates.length === 0) return null;
   const sorted = [...data.periodDates].sort();
   
-  // Find the start day of the most recent logged period cluster
   let cycleStartStr = sorted[sorted.length - 1];
   for (let i = sorted.length - 1; i > 0; i--) {
     const curr = new Date(sorted[i] + 'T00:00:00');
