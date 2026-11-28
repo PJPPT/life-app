@@ -278,31 +278,32 @@
     <!-- TAB 5: STOCKS -->
     <section id="tab-stocks" class="tab-page">
       <div class="card">
-        <div class="row space-between">
-          <h2>Stock Portfolio Tracker</h2>
-          <span class="badge" id="stock-total-profit">Profit: $0.00</span>
+        <div class="row space-between" style="margin-bottom: 10px;">
+          <h2 style="margin:0;">Stock Portfolio</h2>
+          <div class="row">
+            <button onclick="refreshAllStocks()" id="refresh-stocks-btn" class="btn-small">Refresh Prices</button>
+            <span class="badge" id="stock-total-profit">Profit: $0.00</span>
+          </div>
         </div>
         <div class="row">
           <input type="text" id="stock-symbol" placeholder="Ticker (e.g., AAPL)" style="text-transform:uppercase;">
           <input type="number" id="stock-shares" placeholder="Shares" step="any">
         </div>
-        <div class="row">
-          <input type="number" id="stock-buy" placeholder="Buy Price ($)" step="any">
-          <input type="number" id="stock-curr" placeholder="Current Price ($)" step="any">
-        </div>
-        <button onclick="addStock()" class="btn-primary">Add Stock</button>
+        <input type="number" id="stock-buy" placeholder="Buy Price per Share ($)" step="any">
+        <button onclick="addStock()" id="add-stock-btn" class="btn-primary">Fetch Live Price & Add</button>
+        <p id="stock-status-msg" class="subtitle" style="margin-top:6px;"></p>
         <ul id="stock-list" class="item-list"></ul>
       </div>
     </section>
 
   </main>
 
-  <!-- BOTTOM NAVIGATION BAR -->
+  <!-- SCROLLABLE BOTTOM NAVIGATION BAR -->
   <nav class="bottom-nav no-print">
     <button class="nav-btn active" onclick="switchTab('today', this)">Today</button>
-    <button class="nav-btn" onclick="switchTab('schedule', this)">Schedule</button>
-    <button class="nav-btn" onclick="switchTab('media', this)">Media</button>
-    <button class="nav-btn" onclick="switchTab('life', this)">Life/Goals</button>
+    <button class="nav-btn" onclick="switchTab('schedule', this)">Schedule & Resume</button>
+    <button class="nav-btn" onclick="switchTab('media', this)">Books & Shows</button>
+    <button class="nav-btn" onclick="switchTab('life', this)">Projects & Goals</button>
     <button class="nav-btn" onclick="switchTab('stocks', this)">Stocks</button>
   </nav>
 
