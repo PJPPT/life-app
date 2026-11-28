@@ -10,16 +10,20 @@ let data = JSON.parse(localStorage.getItem('lifeOSData')) || {
   shows: [],
   stocks: [],
   projects: [],
+  awards: [],
   goals: [],
   wishes: []
 };
 
 if (!data.stocks) data.stocks = [];
+if (!data.awards) data.awards = [];
 if (typeof data.periodHidden === 'undefined') data.periodHidden = false;
 
 let currentCalDate = new Date();
-let openSummaries = {}; // Tracks which items have their summary open
-let openFolders = {};   // Tracks which series folders are expanded
+let openSummaries = {};
+let openFolders = {};
+let editingBookIndex = null;
+let editingShowIndex = null;
 
 function saveData() {
   localStorage.setItem('lifeOSData', JSON.stringify(data));
@@ -47,8 +51,11 @@ function toggleSchedFields() {
   const type = document.getElementById('sched-type').value;
   const recurrence = document.getElementById('sched-recurrence').value;
   
-  document.getElementById('date-field-container').style.display = (type === 'Event') ? 'block' : 'none';
-  document.getElementById('days-field-container').style.display = (recurrence === 'Custom Days') ? 'flex' : 'none';
+  const isEvent = (type === 'Event');
+  document.getElementById('date-field-container').style.display = isEvent ? 'block' : 'none';
+  document.getElementById('recurrence-field-container').style.display = isEvent ? 'none' : 'block';
+  document.getElementById('days-field-container').style.display = (!isEvent && recurrence === 'Custom Days') ? 'flex' : 'none';
+  document.getElementById('monthly-field-container').style.display = (!isEvent && recurrence === 'Monthly') ? 'flex' : 'none';
 }
 
 // Toggle conditional series fields for Books & Shows
@@ -204,6 +211,48 @@ function saveScratchpad() {
   localStorage.setItem('lifeOSData', JSON.stringify(data));
 }
 
+// Helper to check if a schedule item happens on a specific Date object
+function isScheduledForDate(item, targetDate) {
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const dayShort = dayNames[targetDate.getDay()];
+  
+  const yyyy = targetDate.getFullYear();
+  const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
+  const dd = String(targetDate.getDate()).padStart(2, '0');
+  const targetDateStr = `${yyyy}-${mm}-${dd}`;
+
+  if (item.type === 'Event' || item.date) {
+    return item.date === targetDateStr;
+  }
+
+  if (item.recurrence === 'Everyday') {
+    return true;
+  }
+
+  if (item.recurrence === 'Weekdays (Mon-Fri)') {
+    return targetDate.getDay() >= 1 && targetDate.getDay() <= 5;
+  }
+
+  if (item.recurrence === 'Custom Days') {
+    return Array.isArray(item.days) && item.days.includes(dayShort);
+  }
+
+  if (item.recurrence === 'Monthly') {
+    if (item.monthlyDay !== dayShort) return false;
+    const dateOfMonth = targetDate.getDate();
+    if (item.monthlyWeek === 'last') {
+      const nextWeek = new Date(targetDate);
+      nextWeek.setDate(dateOfMonth + 7);
+      return nextWeek.getMonth() !== targetDate.getMonth();
+    } else {
+      const nth = Math.ceil(dateOfMonth / 7);
+      return nth === parseInt(item.monthlyWeek, 10);
+    }
+  }
+
+  return false;
+}
+
 // Schedules & Events
 function addScheduleItem() {
   const type = document.getElementById('sched-type').value;
@@ -214,16 +263,35 @@ function addScheduleItem() {
   const recurrence = document.getElementById('sched-recurrence').value;
   
   let selectedDays = [];
-  if (recurrence === 'Custom Days') {
-    document.querySelectorAll('.day-selector input:checked').forEach(cb => selectedDays.push(cb.value));
-  } else {
-    selectedDays = [recurrence];
+  let monthlyWeek = '';
+  let monthlyDay = '';
+
+  if (type !== 'Event') {
+    if (recurrence === 'Custom Days') {
+      document.querySelectorAll('.day-selector input:checked').forEach(cb => selectedDays.push(cb.value));
+    } else if (recurrence === 'Monthly') {
+      monthlyWeek = document.getElementById('sched-monthly-week').value;
+      monthlyDay = document.getElementById('sched-monthly-day').value;
+    } else {
+      selectedDays = [recurrence];
+    }
   }
 
   const role = document.getElementById('sched-role').value.trim();
   if (!name) return;
 
-  data.schedules.push({ type, name, date, timeStart, timeEnd, recurrence, days: selectedDays, role });
+  data.schedules.push({
+    type,
+    name,
+    date: type === 'Event' ? date : '',
+    timeStart,
+    timeEnd,
+    recurrence: type === 'Event' ? 'One-Time' : recurrence,
+    days: selectedDays,
+    monthlyWeek,
+    monthlyDay,
+    role
+  });
   
   data.schedules.sort((a, b) => {
     if (a.date && b.date) return new Date(a.date) - new Date(b.date);
@@ -243,16 +311,18 @@ function addScheduleItem() {
   saveData();
 }
 
-// Books
+// Books (Add & Edit)
 function addBook() {
   const isEntire = document.getElementById('book-entire-series').checked;
   const status = document.getElementById('book-status').value;
   const summary = (status === 'Finished') ? document.getElementById('book-summary').value.trim() : '';
 
-  if (isEntire) {
+  let newEntry = null;
+
+  if (isEntire && editingBookIndex === null) {
     const series = document.getElementById('book-series-bulk').value.trim();
     if (!series) return;
-    data.books.push({ title: `${series} (Complete Series)`, series, status, progress: 'Complete', summary, isBulk: true });
+    newEntry = { title: `${series} (Complete Series)`, series, status, progress: 'Complete', summary, isBulk: true };
     document.getElementById('book-series-bulk').value = '';
   } else {
     const title = document.getElementById('book-title').value.trim();
@@ -265,40 +335,77 @@ function addBook() {
     const progress = document.getElementById('book-progress').value.trim();
     if (!title) return;
 
-    data.books.push({ title, series, status, progress, summary, isBulk: false });
-    document.getElementById('book-title').value = '';
-    document.getElementById('book-series-new').value = '';
-    document.getElementById('book-progress').value = '';
+    newEntry = {
+      title,
+      series,
+      status,
+      progress,
+      summary,
+      isBulk: editingBookIndex !== null ? data.books[editingBookIndex].isBulk : false
+    };
   }
 
-  document.getElementById('book-entire-series').checked = false;
-  document.getElementById('book-is-series').checked = false;
-  document.getElementById('book-summary').value = '';
-  toggleEntireSeries('book');
-  toggleMediaSeriesFields('book');
-  toggleSummaryField('book');
+  if (editingBookIndex !== null) {
+    data.books[editingBookIndex] = newEntry;
+    editingBookIndex = null;
+  } else {
+    data.books.push(newEntry);
+  }
+
+  cancelEdit('book');
   saveData();
+}
+
+function editBook(index) {
+  const b = data.books[index];
+  editingBookIndex = index;
+
+  document.getElementById('book-form-title').textContent = 'Edit Book';
+  document.getElementById('book-submit-btn').textContent = 'Update Book';
+  document.getElementById('book-cancel-edit').style.display = 'inline-block';
+  document.getElementById('book-entire-wrap').style.display = 'none';
+  document.getElementById('book-entire-series').checked = false;
+  toggleEntireSeries('book');
+
+  document.getElementById('book-title').value = b.title;
+  document.getElementById('book-progress').value = b.progress || '';
+  document.getElementById('book-status').value = b.status;
+  toggleSummaryField('book');
+  document.getElementById('book-summary').value = b.summary || '';
+
+  if (b.series) {
+    document.getElementById('book-is-series').checked = true;
+    toggleMediaSeriesFields('book');
+    document.getElementById('book-series-select').value = b.series;
+    toggleNewSeriesInput('book');
+  } else {
+    document.getElementById('book-is-series').checked = false;
+    toggleMediaSeriesFields('book');
+  }
+
+  document.getElementById('book-form-card').scrollIntoView({ behavior: 'smooth' });
 }
 
 function cycleBookStatus(index) {
   const order = ['To Be Read', 'In Progress', 'Finished'];
   const current = order.indexOf(data.books[index].status);
   data.books[index].status = order[(current + 1) % order.length];
-  if (data.books[index].status !== 'Finished') data.books[index].summary = '';
   saveData();
 }
 
-// Shows & Movies
+// Shows & Movies (Add & Edit)
 function addShow() {
   const isEntire = document.getElementById('show-entire-series').checked;
   const status = document.getElementById('show-status').value;
   const summary = (status === 'Finished') ? document.getElementById('show-summary').value.trim() : '';
   const type = document.getElementById('show-type').value;
 
-  if (isEntire) {
+  let newEntry = null;
+
+  if (isEntire && editingShowIndex === null) {
     const series = document.getElementById('show-series-bulk').value.trim();
     if (!series) return;
-    data.shows.push({ title: `${series} (Complete ${type})`, series, type, status, note: 'Complete', summary, isBulk: true });
+    newEntry = { title: `${series} (Complete ${type})`, series, type, status, note: 'Complete', summary, isBulk: true };
     document.getElementById('show-series-bulk').value = '';
   } else {
     const title = document.getElementById('show-title').value.trim();
@@ -311,26 +418,97 @@ function addShow() {
     const note = document.getElementById('show-note').value.trim();
     if (!title) return;
 
-    data.shows.push({ title, series, type, status, note, summary, isBulk: false });
+    newEntry = {
+      title,
+      series,
+      type,
+      status,
+      note,
+      summary,
+      isBulk: editingShowIndex !== null ? data.shows[editingShowIndex].isBulk : false
+    };
+  }
+
+  if (editingShowIndex !== null) {
+    data.shows[editingShowIndex] = newEntry;
+    editingShowIndex = null;
+  } else {
+    data.shows.push(newEntry);
+  }
+
+  cancelEdit('show');
+  saveData();
+}
+
+function editShow(index) {
+  const s = data.shows[index];
+  editingShowIndex = index;
+
+  document.getElementById('show-form-title').textContent = 'Edit Show / Movie';
+  document.getElementById('show-submit-btn').textContent = 'Update Show / Movie';
+  document.getElementById('show-cancel-edit').style.display = 'inline-block';
+  document.getElementById('show-entire-wrap').style.display = 'none';
+  document.getElementById('show-entire-series').checked = false;
+  toggleEntireSeries('show');
+
+  document.getElementById('show-title').value = s.title;
+  document.getElementById('show-type').value = s.type || 'Show';
+  document.getElementById('show-note').value = s.note || '';
+  document.getElementById('show-status').value = s.status;
+  toggleSummaryField('show');
+  document.getElementById('show-summary').value = s.summary || '';
+
+  if (s.series) {
+    document.getElementById('show-is-series').checked = true;
+    toggleMediaSeriesFields('show');
+    document.getElementById('show-series-select').value = s.series;
+    toggleNewSeriesInput('show');
+  } else {
+    document.getElementById('show-is-series').checked = false;
+    toggleMediaSeriesFields('show');
+  }
+
+  document.getElementById('show-form-card').scrollIntoView({ behavior: 'smooth' });
+}
+
+function cancelEdit(prefix) {
+  if (prefix === 'book') {
+    editingBookIndex = null;
+    document.getElementById('book-form-title').textContent = 'Add a Book';
+    document.getElementById('book-submit-btn').textContent = 'Save Book';
+    document.getElementById('book-cancel-edit').style.display = 'none';
+    document.getElementById('book-entire-wrap').style.display = 'flex';
+    document.getElementById('book-title').value = '';
+    document.getElementById('book-series-new').value = '';
+    document.getElementById('book-progress').value = '';
+    document.getElementById('book-summary').value = '';
+    document.getElementById('book-entire-series').checked = false;
+    document.getElementById('book-is-series').checked = false;
+    toggleEntireSeries('book');
+    toggleMediaSeriesFields('book');
+    toggleSummaryField('book');
+  } else {
+    editingShowIndex = null;
+    document.getElementById('show-form-title').textContent = 'Add Show or Movie';
+    document.getElementById('show-submit-btn').textContent = 'Save Show / Movie';
+    document.getElementById('show-cancel-edit').style.display = 'none';
+    document.getElementById('show-entire-wrap').style.display = 'flex';
     document.getElementById('show-title').value = '';
     document.getElementById('show-series-new').value = '';
     document.getElementById('show-note').value = '';
+    document.getElementById('show-summary').value = '';
+    document.getElementById('show-entire-series').checked = false;
+    document.getElementById('show-is-series').checked = false;
+    toggleEntireSeries('show');
+    toggleMediaSeriesFields('show');
+    toggleSummaryField('show');
   }
-
-  document.getElementById('show-entire-series').checked = false;
-  document.getElementById('show-is-series').checked = false;
-  document.getElementById('show-summary').value = '';
-  toggleEntireSeries('show');
-  toggleMediaSeriesFields('show');
-  toggleSummaryField('show');
-  saveData();
 }
 
 function cycleShowStatus(index) {
   const order = ['Watchlist', 'Watching', 'Finished'];
   const current = order.indexOf(data.shows[index].status);
   data.shows[index].status = order[(current + 1) % order.length];
-  if (data.shows[index].status !== 'Finished') data.shows[index].summary = '';
   saveData();
 }
 
@@ -429,7 +607,7 @@ function updateStockPrice(index) {
   }
 }
 
-// Projects, Goals, Wish List
+// Projects, Awards, Goals, Wish List
 function addProject() {
   const category = document.getElementById('proj-category').value;
   const status = document.getElementById('proj-status').value;
@@ -444,6 +622,18 @@ function addProject() {
 
 function toggleProjectStatus(index) {
   data.projects[index].status = data.projects[index].status === 'In Progress' ? 'Completed' : 'In Progress';
+  saveData();
+}
+
+function addAward() {
+  const name = document.getElementById('award-name').value.trim();
+  const org = document.getElementById('award-org').value.trim();
+  const date = document.getElementById('award-date').value.trim();
+  if (!name) return;
+  data.awards.push({ name, org, date });
+  document.getElementById('award-name').value = '';
+  document.getElementById('award-org').value = '';
+  document.getElementById('award-date').value = '';
   saveData();
 }
 
@@ -495,10 +685,9 @@ function importData(event) {
 }
 
 // Helper to render grouped media items with auto-series folding (>2 items)
-function renderMediaGrouped(items, statusName, typeKey, cycleFunc) {
+function renderMediaGrouped(items, statusName, typeKey, cycleFunc, editFunc) {
   const filtered = items.map((item, i) => ({ ...item, i })).filter(item => item.status === statusName);
   
-  // Group items by series
   let seriesMap = {};
   let standalone = [];
 
@@ -513,19 +702,16 @@ function renderMediaGrouped(items, statusName, typeKey, cycleFunc) {
 
   let html = '';
 
-  // Render standalone items
   standalone.forEach(item => {
-    html += renderSingleMediaItem(item, typeKey, cycleFunc);
+    html += renderSingleMediaItem(item, typeKey, cycleFunc, editFunc);
   });
 
-  // Render series groups
   Object.keys(seriesMap).forEach(seriesName => {
     const group = seriesMap[seriesName];
     const folderKey = `${typeKey}-${statusName}-${seriesName}`;
     const isOpen = openFolders[folderKey];
 
     if (group.length > 2) {
-      // Auto group into collapsible folder if > 2 items
       html += `
         <div class="series-folder">
           <div class="series-folder-header" onclick="toggleFolder('${folderKey}')">
@@ -535,13 +721,12 @@ function renderMediaGrouped(items, statusName, typeKey, cycleFunc) {
           <div class="series-children" style="display: ${isOpen ? 'block' : 'none'};">
       `;
       group.forEach(item => {
-        html += renderSingleMediaItem(item, typeKey, cycleFunc);
+        html += renderSingleMediaItem(item, typeKey, cycleFunc, editFunc);
       });
       html += `</div></div>`;
     } else {
-      // 2 or fewer items, render normally with badges
       group.forEach(item => {
-        html += renderSingleMediaItem(item, typeKey, cycleFunc);
+        html += renderSingleMediaItem(item, typeKey, cycleFunc, editFunc);
       });
     }
   });
@@ -549,7 +734,7 @@ function renderMediaGrouped(items, statusName, typeKey, cycleFunc) {
   return html || '<p class="item-sub">None here yet.</p>';
 }
 
-function renderSingleMediaItem(item, typeKey, cycleFunc) {
+function renderSingleMediaItem(item, typeKey, cycleFunc, editFunc) {
   const uniqueId = `${typeKey}-${item.i}`;
   const hasSummary = item.summary && item.summary.trim() !== '';
   const isSummaryOpen = openSummaries[uniqueId];
@@ -575,6 +760,7 @@ function renderSingleMediaItem(item, typeKey, cycleFunc) {
           </div>
           <div class="item-sub">${item.progress || item.note || (hasSummary ? 'Tap title for summary' : '')}</div>
         </div>
+        <button class="btn-small" onclick="${editFunc}(${item.i})">Edit</button>
         <button class="btn-small" onclick="${cycleFunc}(${item.i})">Move</button>
         <button class="del-btn" onclick="deleteItem('${typeKey}', ${item.i})">X</button>
       </div>
@@ -583,9 +769,23 @@ function renderSingleMediaItem(item, typeKey, cycleFunc) {
   `;
 }
 
+// Helper to format schedule description
+function formatScheduleDetail(s) {
+  if (s.date) return `📅 ${s.date}`;
+  if (s.recurrence === 'Monthly') {
+    const ordinalMap = { '1': '1st', '2': '2nd', '3': '3rd', '4': '4th', 'last': 'Last' };
+    return `Monthly (${ordinalMap[s.monthlyWeek] || s.monthlyWeek} ${s.monthlyDay})`;
+  }
+  if (s.recurrence === 'Custom Days' && Array.isArray(s.days)) {
+    return s.days.join(', ');
+  }
+  return s.recurrence || '';
+}
+
 // Render Everything
 function renderAll() {
-  document.getElementById('today-date').textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+  const today = new Date();
+  document.getElementById('today-date').textContent = today.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
   document.getElementById('water-count').textContent = data.water;
   document.getElementById('scratchpad').value = data.scratchpad || '';
 
@@ -627,24 +827,33 @@ function renderAll() {
     </li>
   `).join('');
 
-  // Schedules & Events Sorted
-  const schedHTML = data.schedules.map((s, i) => {
+  // Full Schedules & Events Sorted
+  const renderSchedRow = (s, i, showDelete) => {
     let timeStr = (s.timeStart || s.timeEnd) ? `${s.timeStart || ''} - ${s.timeEnd || ''}` : '';
-    let scheduleDetail = s.date ? `📅 ${s.date}` : (Array.isArray(s.days) ? s.days.join(', ') : s.recurrence);
+    let scheduleDetail = formatScheduleDetail(s);
     return `
       <li>
         <div class="item-info">
           <div class="item-title">[${s.type}] ${s.name}</div>
           <div class="item-sub">${scheduleDetail} ${timeStr ? '• ' + timeStr : ''} ${s.role ? '• ' + s.role : ''}</div>
         </div>
-        <button class="del-btn" onclick="deleteItem('schedules', ${i})">X</button>
+        ${showDelete ? `<button class="del-btn" onclick="deleteItem('schedules', ${i})">X</button>` : ''}
       </li>
     `;
-  }).join('');
+  };
 
-  document.getElementById('full-schedule-list').innerHTML = schedHTML;
-  document.getElementById('today-schedule-list').innerHTML = schedHTML || '<li class="item-sub">No schedule items or events added yet.</li>';
+  document.getElementById('full-schedule-list').innerHTML = data.schedules.map((s, i) => renderSchedRow(s, i, true)).join('');
 
+  // Today's Filtered Schedule (Only items matching today's day/date!)
+  const todayItems = data.schedules
+    .map((s, i) => ({ s, i }))
+    .filter(({ s }) => isScheduledForDate(s, today));
+
+  document.getElementById('today-schedule-list').innerHTML = todayItems.length > 0
+    ? todayItems.map(({ s, i }) => renderSchedRow(s, i, false)).join('')
+    : '<li class="item-sub">Nothing scheduled for today!</li>';
+
+  // Resume Sections
   document.getElementById('resume-classes').innerHTML = data.schedules
     .filter(s => s.type === 'Class')
     .map(s => `<li><strong>${s.name}</strong>${s.role ? ' — ' + s.role : ''}</li>`).join('') || '<li>Add classes in Schedule tab</li>';
@@ -656,15 +865,18 @@ function renderAll() {
   document.getElementById('resume-projects').innerHTML = data.projects
     .map(p => `<li><strong>${p.name} (${p.category})</strong> — ${p.status}${p.notes ? ': ' + p.notes : ''}</li>`).join('') || '<li>Add projects in Projects tab</li>';
 
+  document.getElementById('resume-awards').innerHTML = data.awards
+    .map(a => `<li><strong>${a.name}</strong>${a.org ? ' — ' + a.org : ''}${a.date ? ' (' + a.date + ')' : ''}</li>`).join('') || '<li>Add awards in Projects & Goals tab</li>';
+
   // Books
-  document.getElementById('books-in-progress').innerHTML = renderMediaGrouped(data.books, 'In Progress', 'books', 'cycleBookStatus');
-  document.getElementById('books-tbr').innerHTML = renderMediaGrouped(data.books, 'To Be Read', 'books', 'cycleBookStatus');
-  document.getElementById('books-finished').innerHTML = renderMediaGrouped(data.books, 'Finished', 'books', 'cycleBookStatus');
+  document.getElementById('books-in-progress').innerHTML = renderMediaGrouped(data.books, 'In Progress', 'books', 'cycleBookStatus', 'editBook');
+  document.getElementById('books-tbr').innerHTML = renderMediaGrouped(data.books, 'To Be Read', 'books', 'cycleBookStatus', 'editBook');
+  document.getElementById('books-finished').innerHTML = renderMediaGrouped(data.books, 'Finished', 'books', 'cycleBookStatus', 'editBook');
 
   // Shows & Movies
-  document.getElementById('shows-watching').innerHTML = renderMediaGrouped(data.shows, 'Watching', 'shows', 'cycleShowStatus');
-  document.getElementById('shows-watchlist').innerHTML = renderMediaGrouped(data.shows, 'Watchlist', 'shows', 'cycleShowStatus');
-  document.getElementById('shows-finished').innerHTML = renderMediaGrouped(data.shows, 'Finished', 'shows', 'cycleShowStatus');
+  document.getElementById('shows-watching').innerHTML = renderMediaGrouped(data.shows, 'Watching', 'shows', 'cycleShowStatus', 'editShow');
+  document.getElementById('shows-watchlist').innerHTML = renderMediaGrouped(data.shows, 'Watchlist', 'shows', 'cycleShowStatus', 'editShow');
+  document.getElementById('shows-finished').innerHTML = renderMediaGrouped(data.shows, 'Finished', 'shows', 'cycleShowStatus', 'editShow');
 
   // Stocks
   let totalStockProfit = 0;
@@ -702,6 +914,17 @@ function renderAll() {
       </div>
       <button class="btn-small" onclick="toggleProjectStatus(${i})">Toggle Done</button>
       <button class="del-btn" onclick="deleteItem('projects', ${i})">X</button>
+    </li>
+  `).join('');
+
+  // Awards
+  document.getElementById('award-list').innerHTML = data.awards.map((a, i) => `
+    <li>
+      <div class="item-info">
+        <div class="item-title">🏆 ${a.name}</div>
+        <div class="item-sub">${a.org || ''}${a.org && a.date ? ' • ' : ''}${a.date || ''}</div>
+      </div>
+      <button class="del-btn" onclick="deleteItem('awards', ${i})">X</button>
     </li>
   `).join('');
 
