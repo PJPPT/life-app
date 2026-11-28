@@ -38,8 +38,8 @@
       </div>
 
       <div class="card">
-        <h2>Health & Cycle Tracker</h2>
-        <div class="health-grid">
+        <h2>Health & Period Calendar</h2>
+        <div class="health-grid" style="margin-bottom: 12px;">
           <div class="health-box">
             <span class="label">Water Intake</span>
             <div class="big-num"><span id="water-count">0</span> / 8 cups</div>
@@ -49,15 +49,28 @@
             </div>
           </div>
           <div class="health-box">
-            <span class="label">Cycle Status</span>
-            <p id="cycle-display-status" class="small-text">Tap below to update current status.</p>
-            <select id="cycle-status-select" onchange="updateCycleStatus()">
-              <option value="Normal / Follicular">Normal / Follicular</option>
+            <span class="label">Cycle Phase</span>
+            <select id="cycle-status-select" onchange="updateCycleStatus()" style="margin-top: 6px;">
+              <option value="Follicular Phase">Follicular Phase</option>
               <option value="Ovulation Window">Ovulation Window</option>
               <option value="Luteal Phase">Luteal Phase</option>
               <option value="Period Active">Period Active</option>
             </select>
           </div>
+        </div>
+        
+        <!-- Interactive Period Calendar -->
+        <div class="calendar-card">
+          <div class="row space-between" style="margin-bottom: 8px;">
+            <button onclick="changeMonth(-1)" class="btn-small">← Prev</button>
+            <h3 id="cal-month-title" style="margin:0; text-transform:none;">Month Year</h3>
+            <button onclick="changeMonth(1)" class="btn-small">Next →</button>
+          </div>
+          <div class="calendar-grid-header">
+            <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+          </div>
+          <div id="calendar-days" class="calendar-grid"></div>
+          <p class="subtitle" style="text-align:center; margin-top:8px;">Tap any date to log/unlog your period.</p>
         </div>
       </div>
 
