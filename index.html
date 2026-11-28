@@ -61,7 +61,7 @@
       </div>
 
       <div class="card">
-        <h2>Today's Schedule & Classes</h2>
+        <h2>Upcoming Schedule & Events</h2>
         <ul id="today-schedule-list" class="item-list"></ul>
       </div>
 
@@ -83,14 +83,18 @@
     <!-- TAB 2: SCHEDULE & AUTO-RESUME -->
     <section id="tab-schedule" class="tab-page">
       <div class="card no-print">
-        <h2>Add Class, Club, or Routine</h2>
+        <h2>Add Schedule Item or Event</h2>
         <select id="sched-type">
           <option value="Class">School Class</option>
           <option value="Club">Club / Extracurricular</option>
           <option value="Daily">Daily Routine</option>
+          <option value="Event">Special Event (Dated)</option>
         </select>
-        <input type="text" id="sched-name" placeholder="Name (e.g., Robotics Club, AP Bio)">
         
+        <input type="text" id="sched-name" placeholder="Name (e.g., Robotics Meet, AP Bio)">
+        
+        <input type="date" id="sched-date" placeholder="Event Date (for Special Events)">
+
         <div class="row">
           <input type="time" id="sched-time-start">
           <span style="color:var(--muted)">to</span>
@@ -118,7 +122,7 @@
       </div>
 
       <div class="card no-print">
-        <h2>My Schedules</h2>
+        <h2>All Schedules & Events (Sorted)</h2>
         <ul id="full-schedule-list" class="item-list"></ul>
       </div>
 
@@ -150,6 +154,7 @@
         <div class="card">
           <h2>Add a Book</h2>
           <input type="text" id="book-title" placeholder="Book Title & Author">
+          <input type="text" id="book-series" placeholder="Series Name (Optional, e.g. Percy Jackson #1)">
           <div class="row">
             <select id="book-status">
               <option value="In Progress">In Progress</option>
@@ -175,7 +180,8 @@
       <div id="media-shows" class="media-section">
         <div class="card">
           <h2>Add Show or Movie</h2>
-          <input type="text" id="show-title" placeholder="Title (e.g., Spider-Verse, Stranger Things)">
+          <input type="text" id="show-title" placeholder="Title (e.g., Stranger Things)">
+          <input type="text" id="show-series" placeholder="Series / Franchise Name (Optional)">
           <div class="row">
             <select id="show-type">
               <option value="Show">TV Show</option>
