@@ -30,6 +30,7 @@ function switchTab(tabName, btn) {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + tabName).classList.add('active');
   btn.classList.add('active');
+  btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
 }
 
 function switchMediaSub(subName, btn) {
@@ -233,25 +234,86 @@ function cycleShowStatus(index) {
   saveData();
 }
 
-// Stock Tracker
-function addStock() {
+// Live Stock Price Fetcher (via CORS proxy + Yahoo Finance quote endpoint)
+async function fetchLiveStockPrice(symbol) {
+  const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`;
+  const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(yahooUrl)}`;
+  
+  const response = await fetch(proxyUrl);
+  if (!response.ok) throw new Error('Network error');
+  const json = await response.json();
+  const price = json?.chart?.result?.[0]?.meta?.regularMarketPrice;
+  if (typeof price !== 'number') throw new Error('Ticker not found');
+  return price;
+}
+
+async function addStock() {
   const symbol = document.getElementById('stock-symbol').value.trim().toUpperCase();
   const shares = parseFloat(document.getElementById('stock-shares').value) || 1;
   const buy = parseFloat(document.getElementById('stock-buy').value);
-  const curr = parseFloat(document.getElementById('stock-curr').value);
+  const statusMsg = document.getElementById('stock-status-msg');
+  const btn = document.getElementById('add-stock-btn');
   
-  if (!symbol || isNaN(buy) || isNaN(curr)) return;
-  data.stocks.push({ symbol, shares, buy, curr });
+  if (!symbol || isNaN(buy)) return;
+
+  btn.disabled = true;
+  btn.textContent = 'Fetching Price...';
+  statusMsg.textContent = `Looking up ${symbol}...`;
+
+  let currPrice = null;
+  try {
+    currPrice = await fetchLiveStockPrice(symbol);
+    statusMsg.textContent = `Found ${symbol} at $${currPrice.toFixed(2)}`;
+  } catch (err) {
+    const manual = prompt(`Could not auto-fetch price for ${symbol}. Enter current price manually ($):`);
+    if (manual !== null && !isNaN(parseFloat(manual))) {
+      currPrice = parseFloat(manual);
+      statusMsg.textContent = '';
+    } else {
+      statusMsg.textContent = `Cancelled adding ${symbol}.`;
+      btn.disabled = false;
+      btn.textContent = 'Fetch Live Price & Add';
+      return;
+    }
+  }
+
+  data.stocks.push({ symbol, shares, buy, curr: currPrice });
   
   document.getElementById('stock-symbol').value = '';
   document.getElementById('stock-shares').value = '';
   document.getElementById('stock-buy').value = '';
-  document.getElementById('stock-curr').value = '';
+  btn.disabled = false;
+  btn.textContent = 'Fetch Live Price & Add';
+  saveData();
+}
+
+async function refreshAllStocks() {
+  if (data.stocks.length === 0) return;
+  const btn = document.getElementById('refresh-stocks-btn');
+  const statusMsg = document.getElementById('stock-status-msg');
+  btn.disabled = true;
+  btn.textContent = 'Updating...';
+  statusMsg.textContent = 'Fetching latest market prices...';
+
+  let updatedCount = 0;
+  for (let i = 0; i < data.stocks.length; i++) {
+    try {
+      const livePrice = await fetchLiveStockPrice(data.stocks[i].symbol);
+      data.stocks[i].curr = livePrice;
+      updatedCount++;
+    } catch (e) {
+      // Keep existing price if one fails
+    }
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Refresh Prices';
+  statusMsg.textContent = `Updated ${updatedCount} of ${data.stocks.length} stocks (${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}).`;
   saveData();
 }
 
 function updateStockPrice(index) {
-  const newPrice = prompt(`Enter new current price for ${data.stocks[index].symbol}:`, data.stocks[index].curr);
+  const newPrice = prompt(`Enter manual price for ${data.stocks[index].symbol}:`, data.stocks[index].curr);
   if (newPrice !== null && !isNaN(parseFloat(newPrice))) {
     data.stocks[index].curr = parseFloat(newPrice);
     saveData();
@@ -446,7 +508,7 @@ function renderAll() {
           <div class="item-title">${st.symbol} <span class="item-sub">(${st.shares} sh @ $${st.buy.toFixed(2)})</span></div>
           <div class="item-sub">Curr: $${st.curr.toFixed(2)} • <span style="${colorStyle}">${sign}$${profit.toFixed(2)} (${sign}${pct}%)</span></div>
         </div>
-        <button class="btn-small" onclick="updateStockPrice(${i})">Update $</button>
+        <button class="btn-small" onclick="updateStockPrice(${i})">Edit $</button>
         <button class="del-btn" onclick="deleteItem('stocks', ${i})">X</button>
       </li>
     `;
