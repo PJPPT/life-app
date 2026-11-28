@@ -85,7 +85,7 @@
     <section id="tab-schedule" class="tab-page">
       <div class="card no-print">
         <h2>Add Schedule Item or Event</h2>
-        <select id="sched-type">
+        <select id="sched-type" onchange="toggleSchedFields()">
           <option value="Class">School Class</option>
           <option value="Club">Club / Extracurricular</option>
           <option value="Daily">Daily Routine</option>
@@ -94,7 +94,10 @@
         
         <input type="text" id="sched-name" placeholder="Name (e.g., Robotics Meet, AP Bio)">
         
-        <input type="date" id="sched-date" placeholder="Event Date (for Special Events)">
+        <!-- Only shows when Special Event is selected -->
+        <div id="date-field-container" style="display: none;">
+          <input type="date" id="sched-date">
+        </div>
 
         <div class="row">
           <input type="time" id="sched-time-start">
@@ -102,13 +105,14 @@
           <input type="time" id="sched-time-end">
         </div>
 
-        <select id="sched-recurrence">
+        <select id="sched-recurrence" onchange="toggleSchedFields()">
           <option value="Everyday">Everyday</option>
           <option value="Weekdays (Mon-Fri)">Weekdays (Mon-Fri)</option>
-          <option value="Custom Days">Custom Days (Select below)</option>
+          <option value="Custom Days">Custom Days</option>
         </select>
 
-        <div class="day-selector row">
+        <!-- Only shows when Custom Days is selected -->
+        <div id="days-field-container" style="display: none;" class="day-selector row">
           <label><input type="checkbox" value="Mon"> Mon</label>
           <label><input type="checkbox" value="Tue"> Tue</label>
           <label><input type="checkbox" value="Wed"> Wed</label>
