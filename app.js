@@ -18,6 +18,8 @@ if (!data.stocks) data.stocks = [];
 if (typeof data.periodHidden === 'undefined') data.periodHidden = false;
 
 let currentCalDate = new Date();
+let openSummaries = {}; // Tracks which items have their summary open
+let openFolders = {};   // Tracks which series folders are expanded
 
 function saveData() {
   localStorage.setItem('lifeOSData', JSON.stringify(data));
@@ -65,35 +67,37 @@ function toggleNewSeriesInput(prefix) {
   newInput.style.display = (selectVal === '__new__') ? 'block' : 'none';
 }
 
+function toggleEntireSeries(prefix) {
+  const isEntire = document.getElementById(`${prefix}-entire-series`).checked;
+  document.getElementById(`${prefix}-single-fields`).style.display = isEntire ? 'none' : 'block';
+  document.getElementById(`${prefix}-series-only-field`).style.display = isEntire ? 'block' : 'none';
+}
+
+function toggleSummaryField(prefix) {
+  const status = document.getElementById(`${prefix}-status`).value;
+  const sumField = document.getElementById(`${prefix}-summary`);
+  sumField.style.display = (status === 'Finished') ? 'block' : 'none';
+}
+
 function populateSeriesDropdowns() {
-  // Populate Book Series Dropdown
   const bookSeriesList = [...new Set(data.books.map(b => b.series).filter(Boolean))];
   const bookSelect = document.getElementById('book-series-select');
   const prevBookVal = bookSelect.value;
   bookSelect.innerHTML = bookSeriesList.map(s => `<option value="${s.replace(/"/g, '"')}">${s}</option>`).join('') +
     `<option value="__new__">+ Add New Series</option>`;
-  if (bookSeriesList.includes(prevBookVal)) {
-    bookSelect.value = prevBookVal;
-  } else if (bookSeriesList.length > 0 && prevBookVal !== '__new__') {
-    bookSelect.value = bookSeriesList[0];
-  } else {
-    bookSelect.value = '__new__';
-  }
+  if (bookSeriesList.includes(prevBookVal)) bookSelect.value = prevBookVal;
+  else if (bookSeriesList.length > 0 && prevBookVal !== '__new__') bookSelect.value = bookSeriesList[0];
+  else bookSelect.value = '__new__';
   toggleNewSeriesInput('book');
 
-  // Populate Show/Movie Series Dropdown
   const showSeriesList = [...new Set(data.shows.map(s => s.series).filter(Boolean))];
   const showSelect = document.getElementById('show-series-select');
   const prevShowVal = showSelect.value;
   showSelect.innerHTML = showSeriesList.map(s => `<option value="${s.replace(/"/g, '"')}">${s}</option>`).join('') +
     `<option value="__new__">+ Add New Series</option>`;
-  if (showSeriesList.includes(prevShowVal)) {
-    showSelect.value = prevShowVal;
-  } else if (showSeriesList.length > 0 && prevShowVal !== '__new__') {
-    showSelect.value = showSeriesList[0];
-  } else {
-    showSelect.value = '__new__';
-  }
+  if (showSeriesList.includes(prevShowVal)) showSelect.value = prevShowVal;
+  else if (showSeriesList.length > 0 && prevShowVal !== '__new__') showSelect.value = showSeriesList[0];
+  else showSelect.value = '__new__';
   toggleNewSeriesInput('show');
 }
 
@@ -200,7 +204,7 @@ function saveScratchpad() {
   localStorage.setItem('lifeOSData', JSON.stringify(data));
 }
 
-// Schedules, Events & Auto-Resume
+// Schedules & Events
 function addScheduleItem() {
   const type = document.getElementById('sched-type').value;
   const name = document.getElementById('sched-name').value.trim();
@@ -239,28 +243,40 @@ function addScheduleItem() {
   saveData();
 }
 
-// Books with Series Dropdown
+// Books
 function addBook() {
-  const title = document.getElementById('book-title').value.trim();
-  const isSeries = document.getElementById('book-is-series').checked;
-  let series = '';
-  if (isSeries) {
-    const sel = document.getElementById('book-series-select').value;
-    series = (sel === '__new__')
-      ? document.getElementById('book-series-new').value.trim()
-      : sel;
-  }
+  const isEntire = document.getElementById('book-entire-series').checked;
   const status = document.getElementById('book-status').value;
-  const progress = document.getElementById('book-progress').value.trim();
-  if (!title) return;
+  const summary = (status === 'Finished') ? document.getElementById('book-summary').value.trim() : '';
 
-  data.books.push({ title, series, status, progress });
+  if (isEntire) {
+    const series = document.getElementById('book-series-bulk').value.trim();
+    if (!series) return;
+    data.books.push({ title: `${series} (Complete Series)`, series, status, progress: 'Complete', summary, isBulk: true });
+    document.getElementById('book-series-bulk').value = '';
+  } else {
+    const title = document.getElementById('book-title').value.trim();
+    const isSeries = document.getElementById('book-is-series').checked;
+    let series = '';
+    if (isSeries) {
+      const sel = document.getElementById('book-series-select').value;
+      series = (sel === '__new__') ? document.getElementById('book-series-new').value.trim() : sel;
+    }
+    const progress = document.getElementById('book-progress').value.trim();
+    if (!title) return;
 
-  document.getElementById('book-title').value = '';
-  document.getElementById('book-series-new').value = '';
-  document.getElementById('book-progress').value = '';
+    data.books.push({ title, series, status, progress, summary, isBulk: false });
+    document.getElementById('book-title').value = '';
+    document.getElementById('book-series-new').value = '';
+    document.getElementById('book-progress').value = '';
+  }
+
+  document.getElementById('book-entire-series').checked = false;
   document.getElementById('book-is-series').checked = false;
+  document.getElementById('book-summary').value = '';
+  toggleEntireSeries('book');
   toggleMediaSeriesFields('book');
+  toggleSummaryField('book');
   saveData();
 }
 
@@ -268,32 +284,45 @@ function cycleBookStatus(index) {
   const order = ['To Be Read', 'In Progress', 'Finished'];
   const current = order.indexOf(data.books[index].status);
   data.books[index].status = order[(current + 1) % order.length];
+  if (data.books[index].status !== 'Finished') data.books[index].summary = '';
   saveData();
 }
 
-// Shows & Movies with Series Dropdown
+// Shows & Movies
 function addShow() {
-  const title = document.getElementById('show-title').value.trim();
-  const isSeries = document.getElementById('show-is-series').checked;
-  let series = '';
-  if (isSeries) {
-    const sel = document.getElementById('show-series-select').value;
-    series = (sel === '__new__')
-      ? document.getElementById('show-series-new').value.trim()
-      : sel;
-  }
-  const type = document.getElementById('show-type').value;
+  const isEntire = document.getElementById('show-entire-series').checked;
   const status = document.getElementById('show-status').value;
-  const note = document.getElementById('show-note').value.trim();
-  if (!title) return;
+  const summary = (status === 'Finished') ? document.getElementById('show-summary').value.trim() : '';
+  const type = document.getElementById('show-type').value;
 
-  data.shows.push({ title, series, type, status, note });
+  if (isEntire) {
+    const series = document.getElementById('show-series-bulk').value.trim();
+    if (!series) return;
+    data.shows.push({ title: `${series} (Complete ${type})`, series, type, status, note: 'Complete', summary, isBulk: true });
+    document.getElementById('show-series-bulk').value = '';
+  } else {
+    const title = document.getElementById('show-title').value.trim();
+    const isSeries = document.getElementById('show-is-series').checked;
+    let series = '';
+    if (isSeries) {
+      const sel = document.getElementById('show-series-select').value;
+      series = (sel === '__new__') ? document.getElementById('show-series-new').value.trim() : sel;
+    }
+    const note = document.getElementById('show-note').value.trim();
+    if (!title) return;
 
-  document.getElementById('show-title').value = '';
-  document.getElementById('show-series-new').value = '';
-  document.getElementById('show-note').value = '';
+    data.shows.push({ title, series, type, status, note, summary, isBulk: false });
+    document.getElementById('show-title').value = '';
+    document.getElementById('show-series-new').value = '';
+    document.getElementById('show-note').value = '';
+  }
+
+  document.getElementById('show-entire-series').checked = false;
   document.getElementById('show-is-series').checked = false;
+  document.getElementById('show-summary').value = '';
+  toggleEntireSeries('show');
   toggleMediaSeriesFields('show');
+  toggleSummaryField('show');
   saveData();
 }
 
@@ -301,10 +330,22 @@ function cycleShowStatus(index) {
   const order = ['Watchlist', 'Watching', 'Finished'];
   const current = order.indexOf(data.shows[index].status);
   data.shows[index].status = order[(current + 1) % order.length];
+  if (data.shows[index].status !== 'Finished') data.shows[index].summary = '';
   saveData();
 }
 
-// Live Stock Price Fetcher (via CORS proxy + Yahoo Finance quote endpoint)
+// Summary Toggle & Folder Toggles
+function toggleSummary(id) {
+  openSummaries[id] = !openSummaries[id];
+  renderAll();
+}
+
+function toggleFolder(folderKey) {
+  openFolders[folderKey] = !openFolders[folderKey];
+  renderAll();
+}
+
+// Live Stock Price Fetcher
 async function fetchLiveStockPrice(symbol) {
   const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`;
   const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(yahooUrl)}`;
@@ -371,14 +412,12 @@ async function refreshAllStocks() {
       const livePrice = await fetchLiveStockPrice(data.stocks[i].symbol);
       data.stocks[i].curr = livePrice;
       updatedCount++;
-    } catch (e) {
-      // Keep existing price if one fails
-    }
+    } catch (e) {}
   }
 
   btn.disabled = false;
   btn.textContent = 'Refresh Prices';
-  statusMsg.textContent = `Updated ${updatedCount} of ${data.stocks.length} stocks (${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}).`;
+  statusMsg.textContent = `Updated ${updatedCount} of ${data.stocks.length} stocks.`;
   saveData();
 }
 
@@ -455,6 +494,95 @@ function importData(event) {
   reader.readAsText(file);
 }
 
+// Helper to render grouped media items with auto-series folding (>2 items)
+function renderMediaGrouped(items, statusName, typeKey, cycleFunc) {
+  const filtered = items.map((item, i) => ({ ...item, i })).filter(item => item.status === statusName);
+  
+  // Group items by series
+  let seriesMap = {};
+  let standalone = [];
+
+  filtered.forEach(item => {
+    if (item.series && item.series.trim() !== '') {
+      if (!seriesMap[item.series]) seriesMap[item.series] = [];
+      seriesMap[item.series].push(item);
+    } else {
+      standalone.push(item);
+    }
+  });
+
+  let html = '';
+
+  // Render standalone items
+  standalone.forEach(item => {
+    html += renderSingleMediaItem(item, typeKey, cycleFunc);
+  });
+
+  // Render series groups
+  Object.keys(seriesMap).forEach(seriesName => {
+    const group = seriesMap[seriesName];
+    const folderKey = `${typeKey}-${statusName}-${seriesName}`;
+    const isOpen = openFolders[folderKey];
+
+    if (group.length > 2) {
+      // Auto group into collapsible folder if > 2 items
+      html += `
+        <div class="series-folder">
+          <div class="series-folder-header" onclick="toggleFolder('${folderKey}')">
+            <span>📚 ${seriesName} (${group.length} items)</span>
+            <span class="btn-small">${isOpen ? '▲ Collapse' : '▼ Expand'}</span>
+          </div>
+          <div class="series-children" style="display: ${isOpen ? 'block' : 'none'};">
+      `;
+      group.forEach(item => {
+        html += renderSingleMediaItem(item, typeKey, cycleFunc);
+      });
+      html += `</div></div>`;
+    } else {
+      // 2 or fewer items, render normally with badges
+      group.forEach(item => {
+        html += renderSingleMediaItem(item, typeKey, cycleFunc);
+      });
+    }
+  });
+
+  return html || '<p class="item-sub">None here yet.</p>';
+}
+
+function renderSingleMediaItem(item, typeKey, cycleFunc) {
+  const uniqueId = `${typeKey}-${item.i}`;
+  const hasSummary = item.summary && item.summary.trim() !== '';
+  const isSummaryOpen = openSummaries[uniqueId];
+
+  let summaryHTML = '';
+  if (hasSummary) {
+    summaryHTML = `
+      <div class="summary-box" style="display: ${isSummaryOpen ? 'block' : 'none'};">
+        <strong>Summary:</strong> ${item.summary}
+      </div>
+    `;
+  }
+
+  const titleClickAction = hasSummary ? `onclick="toggleSummary('${uniqueId}')"` : '';
+  const titleStyle = hasSummary ? 'cursor: pointer; color: var(--primary);' : '';
+
+  return `
+    <div class="media-item-wrap">
+      <div class="media-header">
+        <div class="item-info">
+          <div class="item-title" ${titleClickAction} style="${titleStyle}">
+            ${item.title} ${item.series ? '<span class="badge">' + item.series + '</span>' : ''} ${item.type ? '<span class="badge" style="background:#e0f2fe; color:#0369a1;">' + item.type + '</span>' : ''}
+          </div>
+          <div class="item-sub">${item.progress || item.note || (hasSummary ? 'Tap title for summary' : '')}</div>
+        </div>
+        <button class="btn-small" onclick="${cycleFunc}(${item.i})">Move</button>
+        <button class="del-btn" onclick="deleteItem('${typeKey}', ${item.i})">X</button>
+      </div>
+      ${summaryHTML}
+    </div>
+  `;
+}
+
 // Render Everything
 function renderAll() {
   document.getElementById('today-date').textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
@@ -528,41 +656,15 @@ function renderAll() {
   document.getElementById('resume-projects').innerHTML = data.projects
     .map(p => `<li><strong>${p.name} (${p.category})</strong> — ${p.status}${p.notes ? ': ' + p.notes : ''}</li>`).join('') || '<li>Add projects in Projects tab</li>';
 
-  // Books with Series
-  const renderBooks = (status) => data.books
-    .map((b, i) => ({ ...b, i }))
-    .filter(b => b.status === status)
-    .map(b => `
-      <li>
-        <div class="item-info">
-          <div class="item-title">${b.title} ${b.series ? '<span class="badge">' + b.series + '</span>' : ''}</div>
-          <div class="item-sub">${b.progress || 'No progress note'}</div>
-        </div>
-        <button class="btn-small" onclick="cycleBookStatus(${b.i})">Move</button>
-        <button class="del-btn" onclick="deleteItem('books', ${b.i})">X</button>
-      </li>
-    `).join('');
-  document.getElementById('books-in-progress').innerHTML = renderBooks('In Progress');
-  document.getElementById('books-tbr').innerHTML = renderBooks('To Be Read');
-  document.getElementById('books-finished').innerHTML = renderBooks('Finished');
+  // Books
+  document.getElementById('books-in-progress').innerHTML = renderMediaGrouped(data.books, 'In Progress', 'books', 'cycleBookStatus');
+  document.getElementById('books-tbr').innerHTML = renderMediaGrouped(data.books, 'To Be Read', 'books', 'cycleBookStatus');
+  document.getElementById('books-finished').innerHTML = renderMediaGrouped(data.books, 'Finished', 'books', 'cycleBookStatus');
 
-  // Shows & Movies with Series
-  const renderShows = (status) => data.shows
-    .map((s, i) => ({ ...s, i }))
-    .filter(s => s.status === status)
-    .map(s => `
-      <li>
-        <div class="item-info">
-          <div class="item-title">${s.title} <span class="badge">${s.type}</span> ${s.series ? '<span class="badge" style="background:#e0f2fe; color:#0369a1;">' + s.series + '</span>' : ''}</div>
-          <div class="item-sub">${s.note || ''}</div>
-        </div>
-        <button class="btn-small" onclick="cycleShowStatus(${s.i})">Move</button>
-        <button class="del-btn" onclick="deleteItem('shows', ${s.i})">X</button>
-      </li>
-    `).join('');
-  document.getElementById('shows-watching').innerHTML = renderShows('Watching');
-  document.getElementById('shows-watchlist').innerHTML = renderShows('Watchlist');
-  document.getElementById('shows-finished').innerHTML = renderShows('Finished');
+  // Shows & Movies
+  document.getElementById('shows-watching').innerHTML = renderMediaGrouped(data.shows, 'Watching', 'shows', 'cycleShowStatus');
+  document.getElementById('shows-watchlist').innerHTML = renderMediaGrouped(data.shows, 'Watchlist', 'shows', 'cycleShowStatus');
+  document.getElementById('shows-finished').innerHTML = renderMediaGrouped(data.shows, 'Finished', 'shows', 'cycleShowStatus');
 
   // Stocks
   let totalStockProfit = 0;
@@ -636,3 +738,7 @@ renderAll();
 toggleSchedFields();
 toggleMediaSeriesFields('book');
 toggleMediaSeriesFields('show');
+toggleEntireSeries('book');
+toggleEntireSeries('show');
+toggleSummaryField('book');
+toggleSummaryField('show');
