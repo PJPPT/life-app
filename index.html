@@ -178,7 +178,19 @@
         <div class="card">
           <h2>Add a Book</h2>
           <input type="text" id="book-title" placeholder="Book Title & Author">
-          <input type="text" id="book-series" placeholder="Series Name (Optional, e.g. Percy Jackson #1)">
+          
+          <label class="row" style="margin-bottom:8px; font-size:0.9rem; cursor:pointer;">
+            <input type="checkbox" id="book-is-series" onchange="toggleMediaSeriesFields('book')" style="width:auto; margin:0;">
+            <span>Part of a Series?</span>
+          </label>
+
+          <div id="book-series-container" style="display:none;">
+            <select id="book-series-select" onchange="toggleNewSeriesInput('book')">
+              <option value="__new__">+ Add New Series</option>
+            </select>
+            <input type="text" id="book-series-new" placeholder="Enter New Series Name (e.g. Percy Jackson)">
+          </div>
+
           <div class="row">
             <select id="book-status">
               <option value="In Progress">In Progress</option>
@@ -205,7 +217,19 @@
         <div class="card">
           <h2>Add Show or Movie</h2>
           <input type="text" id="show-title" placeholder="Title (e.g., Stranger Things)">
-          <input type="text" id="show-series" placeholder="Series / Franchise Name (Optional)">
+
+          <label class="row" style="margin-bottom:8px; font-size:0.9rem; cursor:pointer;">
+            <input type="checkbox" id="show-is-series" onchange="toggleMediaSeriesFields('show')" style="width:auto; margin:0;">
+            <span>Part of a Series / Franchise?</span>
+          </label>
+
+          <div id="show-series-container" style="display:none;">
+            <select id="show-series-select" onchange="toggleNewSeriesInput('show')">
+              <option value="__new__">+ Add New Series</option>
+            </select>
+            <input type="text" id="show-series-new" placeholder="Enter New Series / Franchise Name">
+          </div>
+
           <div class="row">
             <select id="show-type">
               <option value="Show">TV Show</option>
