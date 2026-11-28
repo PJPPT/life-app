@@ -16,8 +16,9 @@
       <h1>My Life OS</h1>
       <p id="today-date" class="subtitle"></p>
     </div>
-    <div class="backup-controls">
-      <button onclick="exportData()" class="btn-small">Save Backup</button>
+    <div class="backup-controls row" style="gap:4px;">
+      <button onclick="location.reload()" class="btn-small" style="background:#fef08a; color:#854d0e;">Refresh</button>
+      <button onclick="exportData()" class="btn-small">Save</button>
       <label class="btn-small file-label">
         Load <input type="file" id="import-file" accept=".json" onchange="importData(event)" hidden>
       </label>
@@ -171,96 +172,3 @@
           <ul id="books-in-progress" class="item-list"></ul>
           <h3>To Be Read</h3>
           <ul id="books-tbr" class="item-list"></ul>
-          <h3>Finished</h3>
-          <ul id="books-finished" class="item-list"></ul>
-        </div>
-      </div>
-
-      <!-- SHOWS & MOVIES SECTION -->
-      <div id="media-shows" class="media-section">
-        <div class="card">
-          <h2>Add Show or Movie</h2>
-          <input type="text" id="show-title" placeholder="Title (e.g., Stranger Things)">
-          <input type="text" id="show-series" placeholder="Series / Franchise Name (Optional)">
-          <div class="row">
-            <select id="show-type">
-              <option value="Show">TV Show</option>
-              <option value="Movie">Movie</option>
-            </select>
-            <select id="show-status">
-              <option value="Watching">Watching</option>
-              <option value="Watchlist">Watchlist</option>
-              <option value="Finished">Finished / Favorite</option>
-            </select>
-          </div>
-          <input type="text" id="show-note" placeholder="Season/Ep or Rating (e.g., S2 E4 or 10/10)">
-          <button onclick="addShow()" class="btn-primary">Save Show / Movie</button>
-        </div>
-
-        <div class="card">
-          <h3>Currently Watching</h3>
-          <ul id="shows-watching" class="item-list"></ul>
-          <h3>Watchlist</h3>
-          <ul id="shows-watchlist" class="item-list"></ul>
-          <h3>Finished & Favorites</h3>
-          <ul id="shows-finished" class="item-list"></ul>
-        </div>
-      </div>
-    </section>
-
-    <!-- TAB 4: PROJECTS, GOALS & WISH LIST -->
-    <section id="tab-life" class="tab-page">
-      <div class="card">
-        <h2>Projects (Art, Robotics, etc.)</h2>
-        <div class="row">
-          <select id="proj-category">
-            <option value="Robotics">Robotics</option>
-            <option value="Art">Art</option>
-            <option value="Other">Other</option>
-          </select>
-          <select id="proj-status">
-            <option value="In Progress">In Progress</option>
-            <option value="Completed">Completed</option>
-          </select>
-        </div>
-        <input type="text" id="proj-name" placeholder="Project Name">
-        <input type="text" id="proj-notes" placeholder="Next step or materials needed">
-        <button onclick="addProject()" class="btn-primary">Add Project</button>
-        <ul id="project-list" class="item-list"></ul>
-      </div>
-
-      <div class="card">
-        <h2>Life Goals</h2>
-        <div class="input-group">
-          <input type="text" id="goal-input" placeholder="Add a short or long-term goal...">
-          <button onclick="addGoal()" class="btn-primary">Add</button>
-        </div>
-        <ul id="goal-list" class="item-list"></ul>
-      </div>
-
-      <div class="card">
-        <div class="row space-between">
-          <h2>Shopping Wish List</h2>
-          <span class="badge">Total: $<span id="wish-total">0.00</span></span>
-        </div>
-        <input type="text" id="wish-name" placeholder="Item name">
-        <input type="url" id="wish-link" placeholder="Paste item web link (URL)">
-        <input type="number" id="wish-price" placeholder="Price ($)" step="0.01">
-        <button onclick="addWish()" class="btn-primary">Add to Wish List</button>
-        <ul id="wish-list" class="item-list"></ul>
-      </div>
-    </section>
-
-  </main>
-
-  <!-- BOTTOM NAVIGATION BAR -->
-  <nav class="bottom-nav no-print">
-    <button class="nav-btn active" onclick="switchTab('today', this)">Today</button>
-    <button class="nav-btn" onclick="switchTab('schedule', this)">Schedule & Resume</button>
-    <button class="nav-btn" onclick="switchTab('media', this)">Books & Shows</button>
-    <button class="nav-btn" onclick="switchTab('life', this)">Projects & Goals</button>
-  </nav>
-
-  <script src="app.js"></script>
-</body>
-</html>
