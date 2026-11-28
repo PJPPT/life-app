@@ -177,38 +177,53 @@
       <div id="media-books" class="media-section active">
         <div class="card">
           <h2>Add a Book</h2>
-          <input type="text" id="book-title" placeholder="Book Title & Author">
           
           <label class="row" style="margin-bottom:8px; font-size:0.9rem; cursor:pointer;">
-            <input type="checkbox" id="book-is-series" onchange="toggleMediaSeriesFields('book')" style="width:auto; margin:0;">
-            <span>Part of a Series?</span>
+            <input type="checkbox" id="book-entire-series" onchange="toggleEntireSeries('book')" style="width:auto; margin:0;">
+            <span>I have read the entire series (skip individual books)</span>
           </label>
 
-          <div id="book-series-container" style="display:none;">
-            <select id="book-series-select" onchange="toggleNewSeriesInput('book')">
-              <option value="__new__">+ Add New Series</option>
-            </select>
-            <input type="text" id="book-series-new" placeholder="Enter New Series Name (e.g. Percy Jackson)">
+          <div id="book-single-fields">
+            <input type="text" id="book-title" placeholder="Book Title & Author">
+            
+            <label class="row" style="margin-bottom:8px; font-size:0.9rem; cursor:pointer;">
+              <input type="checkbox" id="book-is-series" onchange="toggleMediaSeriesFields('book')" style="width:auto; margin:0;">
+              <span>Part of a Series?</span>
+            </label>
+
+            <div id="book-series-container" style="display:none;">
+              <select id="book-series-select" onchange="toggleNewSeriesInput('book')">
+                <option value="__new__">+ Add New Series</option>
+              </select>
+              <input type="text" id="book-series-new" placeholder="Enter New Series Name">
+            </div>
+          </div>
+
+          <div id="book-series-only-field" style="display:none;">
+            <input type="text" id="book-series-bulk" placeholder="Series Name (e.g. Percy Jackson Complete Series)">
           </div>
 
           <div class="row">
-            <select id="book-status">
+            <select id="book-status" onchange="toggleSummaryField('book')">
               <option value="In Progress">In Progress</option>
               <option value="To Be Read">To Be Read</option>
               <option value="Finished">Finished</option>
             </select>
             <input type="text" id="book-progress" placeholder="Page # or % (e.g., p. 120/300)">
           </div>
-          <button onclick="addBook()" class="btn-primary">Save Book</button>
+
+          <textarea id="book-summary" rows="2" placeholder="Optional summary (visible when finished)..." style="display:none; margin-top:8px;"></textarea>
+          
+          <button onclick="addBook()" class="btn-primary" style="margin-top:8px;">Save Book</button>
         </div>
 
         <div class="card">
           <h3>In Progress</h3>
-          <ul id="books-in-progress" class="item-list"></ul>
+          <div id="books-in-progress"></div>
           <h3>To Be Read</h3>
-          <ul id="books-tbr" class="item-list"></ul>
+          <div id="books-tbr"></div>
           <h3>Finished</h3>
-          <ul id="books-finished" class="item-list"></ul>
+          <div id="books-finished"></div>
         </div>
       </div>
 
@@ -216,18 +231,30 @@
       <div id="media-shows" class="media-section">
         <div class="card">
           <h2>Add Show or Movie</h2>
-          <input type="text" id="show-title" placeholder="Title (e.g., Stranger Things)">
 
           <label class="row" style="margin-bottom:8px; font-size:0.9rem; cursor:pointer;">
-            <input type="checkbox" id="show-is-series" onchange="toggleMediaSeriesFields('show')" style="width:auto; margin:0;">
-            <span>Part of a Series / Franchise?</span>
+            <input type="checkbox" id="show-entire-series" onchange="toggleEntireSeries('show')" style="width:auto; margin:0;">
+            <span>I have watched the entire series / franchise</span>
           </label>
 
-          <div id="show-series-container" style="display:none;">
-            <select id="show-series-select" onchange="toggleNewSeriesInput('show')">
-              <option value="__new__">+ Add New Series</option>
-            </select>
-            <input type="text" id="show-series-new" placeholder="Enter New Series / Franchise Name">
+          <div id="show-single-fields">
+            <input type="text" id="show-title" placeholder="Title (e.g., Stranger Things)">
+
+            <label class="row" style="margin-bottom:8px; font-size:0.9rem; cursor:pointer;">
+              <input type="checkbox" id="show-is-series" onchange="toggleMediaSeriesFields('show')" style="width:auto; margin:0;">
+              <span>Part of a Series / Franchise?</span>
+            </label>
+
+            <div id="show-series-container" style="display:none;">
+              <select id="show-series-select" onchange="toggleNewSeriesInput('show')">
+                <option value="__new__">+ Add New Series</option>
+              </select>
+              <input type="text" id="show-series-new" placeholder="Enter New Series / Franchise Name">
+            </div>
+          </div>
+
+          <div id="show-series-only-field" style="display:none;">
+            <input type="text" id="show-series-bulk" placeholder="Series / Franchise Name">
           </div>
 
           <div class="row">
@@ -235,23 +262,26 @@
               <option value="Show">TV Show</option>
               <option value="Movie">Movie</option>
             </select>
-            <select id="show-status">
+            <select id="show-status" onchange="toggleSummaryField('show')">
               <option value="Watching">Watching</option>
               <option value="Watchlist">Watchlist</option>
               <option value="Finished">Finished / Favorite</option>
             </select>
           </div>
+
           <input type="text" id="show-note" placeholder="Season/Ep or Rating (e.g., S2 E4 or 10/10)">
-          <button onclick="addShow()" class="btn-primary">Save Show / Movie</button>
+          <textarea id="show-summary" rows="2" placeholder="Optional summary (visible when finished)..." style="display:none; margin-top:8px;"></textarea>
+
+          <button onclick="addShow()" class="btn-primary" style="margin-top:8px;">Save Show / Movie</button>
         </div>
 
         <div class="card">
           <h3>Currently Watching</h3>
-          <ul id="shows-watching" class="item-list"></ul>
+          <div id="shows-watching"></div>
           <h3>Watchlist</h3>
-          <ul id="shows-watchlist" class="item-list"></ul>
+          <div id="shows-watchlist"></div>
           <h3>Finished & Favorites</h3>
-          <ul id="shows-finished" class="item-list"></ul>
+          <div id="shows-finished"></div>
         </div>
       </div>
     </section>
